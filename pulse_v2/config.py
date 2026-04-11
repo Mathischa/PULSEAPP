@@ -36,7 +36,22 @@ def find_dev_path() -> Path:
     """
     Trouve le chemin DEV_PATH en cherchant la queue standard:
     [...]/Partage - Invités/Projet PULSE/4. Données historiques/Développement
+    
+    Pour production (Render), utilise DEV_PATH depuis l'env ou depuis le répertoire courant.
     """
+    # 1) Si DEV_PATH est défini en variable d'environnement, l'utiliser
+    if "DEV_PATH" in os.environ:
+        path = Path(os.environ["DEV_PATH"])
+        if path.exists():
+            return path
+    
+    # 2) Essai avec le répertoire parent du projet (relatif)
+    # Depuis pulse_v2/config.py → remonte à pulse_v2 → remonte à root
+    current_dir = Path(__file__).resolve().parent.parent
+    if (current_dir / "Données").exists():
+        return current_dir
+    
+    # 3) Sinon, chercher sur le système local (Windows dev)
     USER_ID = Path.home().name
     BASE_DIR = Path(fr"C:\Users\{USER_ID}\SNCF")
     
@@ -47,7 +62,7 @@ def find_dev_path() -> Path:
         "Développement",
     ]
 
-    # 1) Essai direct sur le chemin "canonique"
+    # Essai direct sur le chemin "canonique"
     default_path = (
         BASE_DIR 
         / "DCF GROUPE (Grp. O365) GrpO365 - Reporting et prévisions" 
@@ -56,7 +71,7 @@ def find_dev_path() -> Path:
     if default_path.exists():
         return default_path
 
-    # 2) Scan générique : on ne regarde que la fin de chemin (tail)
+    # Scan générique : on ne regarde que la fin de chemin (tail)
     candidates = []
     if BASE_DIR.exists():
         for root, dirs, _ in os.walk(BASE_DIR):
