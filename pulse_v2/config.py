@@ -34,21 +34,18 @@ def _match_tail(path: Path, tail: list[str]) -> bool:
 
 def find_dev_path() -> Path:
     """
-    Trouve le chemin DEV_PATH en cherchant la queue standard:
-    [...]/Partage - Invités/Projet PULSE/4. Données historiques/Développement
-    
-    Pour production (Render), utilise DEV_PATH depuis l'env ou depuis le répertoire courant.
+    Trouve le chemin DEV_PATH en cherchant la queue standard.
+    Pour production (Render), on accepte un chemin même sans le dossier Données.
     """
     # 1) Si DEV_PATH est défini en variable d'environnement, l'utiliser
     if "DEV_PATH" in os.environ:
         path = Path(os.environ["DEV_PATH"])
-        if path.exists():
-            return path
+        return path
     
-    # 2) Essai avec le répertoire parent du projet (relatif)
-    # Depuis pulse_v2/config.py → remonte à pulse_v2 → remonte à root
+    # 2) Essai avec le répertoire parent du projet (relatif) - LE PLUS IMPORTANT
+    # Depuis pulse_v2/config.py → remonte à pulse_v2 → remonte à root du projet
     current_dir = Path(__file__).resolve().parent.parent
-    if (current_dir / "Données").exists():
+    if (current_dir / "pulse_v2").exists():  # Vérifier pulse_v2 existe plutôt que Données
         return current_dir
     
     # 3) Sinon, chercher sur le système local (Windows dev)
