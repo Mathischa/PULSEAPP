@@ -1,0 +1,55 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# CatBoost
+catboost_info/
+*.tsv
+
+# Large files
+*.pptx
+*.xlsx
+*.csv
+*.zip
+*.rar
+
+# Données volumineuses
+Données/
+Données Réelles/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Cache local
+.claude/
+.pytest_cache/
+

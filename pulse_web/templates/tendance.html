@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% set active_page = "tendance" %}
+{% block title %}Tendance Flux{% endblock %}
+{% block breadcrumb %}Analyse · Tendance flux{% endblock %}
+
+{% block head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+  <div class="page-header-text">
+    <h1>Tendance Flux</h1>
+    <p class="subtitle">
+      Analyse complète des flux réels : structure hebdomadaire, K-means, glissement mensuel,
+      profil annuel, radars de saisonnalité et comparaison réalisé vs prévisions.
+    </p>
+  </div>
+</div>
+
+<!-- Filtres -->
+<div class="filters-bar">
+  <div class="filter-group">
+    <label class="filter-label" for="f-section">Section / Filiale</label>
+    <select class="filter-select" id="f-section" style="min-width:180px;">
+      <option value="">Choisir…</option>
+    </select>
+  </div>
+
+  <div class="filter-group">
+    <label class="filter-label" for="f-flux">Flux</label>
+    <select class="filter-select" id="f-flux" style="min-width:240px;" disabled>
+      <option value="">— sélectionner une section d'abord —</option>
+    </select>
+  </div>
+
+  <div class="filter-group">
+    <label class="filter-label" for="f-annee">Année</label>
+    <select class="filter-select" id="f-annee" style="min-width:140px;">
+      <option value="">Toutes</option>
+    </select>
+  </div>
+
+  <div class="filters-actions">
+    <button class="btn btn--primary" id="btn-analyser" disabled>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <circle cx="11" cy="11" r="8"></circle>
+        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+      </svg>
+      Analyser
+    </button>
+  </div>
+</div>
+
+<!-- État initial -->
+<div id="state-empty" class="empty-state">
+  <div class="empty-icon">📈</div>
+  <p>Sélectionnez une section, un flux et éventuellement une année pour lancer l’analyse complète.</p>
+</div>
+
+<!-- Loading -->
+<div id="state-loading" class="loading-state" hidden>
+  <div class="spinner"></div>
+  Extraction et calcul des tendances…
+</div>
+
+<!-- Erreur -->
+<div id="state-error" class="error-state" hidden>
+  ⚠ <span id="error-msg">Erreur inconnue</span>
+</div>
+
+<!-- Résultat -->
+<div id="state-result" hidden></div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/tendance.js') }}"></script>
+{% endblock %}

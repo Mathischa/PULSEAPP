@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PULSE — {% block title %}{% endblock %}</title>
+  <meta name="theme-color" content="#07090F" />
+  <meta name="color-scheme" content="dark" />
+  <meta name="description" content="PULSE — plateforme de supervision et d’analyse des données DCF Groupe." />
+
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/pulse.css') }}" />
+  {% block head %}{% endblock %}
+
+  <style>
+    /* ══════════════════════════════════════════════════════════════
+       PULSE — Premium Splash Screen
+    ══════════════════════════════════════════════════════════════ */
+
+    /* Overlay root */
+    #pulse-splash {
+      position: fixed; inset: 0; z-index: 99999;
+      display: flex; align-items: center; justify-content: center;
+      background: #020912;
+      overflow: hidden; user-select: none;
+      transition: opacity 1.2s cubic-bezier(0.22,1,.36,1),
+                  transform 1.2s cubic-bezier(0.22,1,.36,1);
+    }
+    #pulse-splash.splash--out {
+      opacity: 0; transform: scale(1.06); pointer-events: none;
+    }
+
+    /* ── Canvas network ── */
+    #splash-canvas {
+      position: absolute; inset: 0;
+      width: 100%; height: 100%; pointer-events: none;
+    }
+
+    /* ── CSS grid ── */
+    .sp-grid {
+      position: absolute; inset: 0; pointer-events: none;
+      background-image:
+        linear-gradient(rgba(50,110,230,.032) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(50,110,230,.032) 1px, transparent 1px);
+      background-size: 60px 60px;
+    }
+
+    /* ── Radial vignette ── */
+    .sp-vignette {
+      position: absolute; inset: 0; pointer-events: none;
+      background: radial-gradient(ellipse 75% 75% at 50% 50%,
+        transparent 0%, rgba(2,9,18,.75) 100%);
+    }
+
+    /* ── Horizontal scan sweep ── */
+    .sp-scan {
+      position: absolute; left: 0; right: 0;
+      height: 200px; pointer-events: none;
+      background: linear-gradient(180deg,
+        transparent 0%,
+        rgba(50,120,255,.018) 30%,
+        rgba(50,120,255,.05) 50%,
+        rgba(50,120,255,.018) 70%,
+        transparent 100%);
+      animation: sp-sweep 7s linear infinite;
+    }
+    @keyframes sp-sweep { 0%{top:-200px} 100%{top:calc(100% + 200px)} }
+
+    /* ── HUD corner brackets ── */
+    .sp-corner {
+      position: absolute; width: 34px; height: 34px;
+      border: 1.5px solid rgba(70,145,255,.28);
+      opacity: 0; animation: sp-corner-in .6s cubic-bezier(.34,1.56,.64,1) forwards;
+    }
+    .sp-corner::after {
+      content: ''; position: absolute;
+      width: 5px; height: 5px; border-radius: 50%;
+      background: rgba(70,145,255,.55);
+    }
+    .sp-tl { top:26px; left:26px; border-right:none; border-bottom:none; animation-delay:.7s }
+    .sp-tl::after { bottom:-3px; right:-3px }
+    .sp-tr { top:26px; right:26px; border-left:none; border-bottom:none; animation-delay:.8s }
+    .sp-tr::after { bottom:-3px; left:-3px }
+    .sp-bl { bottom:26px; left:26px; border-top:none; border-right:none; animation-delay:.9s }
+    .sp-bl::after { top:-3px; right:-3px }
+    .sp-br { bottom:26px; right:26px; border-top:none; border-left:none; animation-delay:1s }
+    .sp-br::after { top:-3px; left:-3px }
+    @keyframes sp-corner-in {
+      from { opacity:0; transform:scale(.4) }
+      to   { opacity:1; transform:scale(1) }
+    }
+
+    /* ── Center column ── */
+    .sp-center {
+      position: relative; z-index: 2;
+      display: flex; flex-direction: column; align-items: center;
+    }
+
+    /* ── Logo frame with SVG rings ── */
+    .sp-logo-frame {
+      position: relative; width: 228px; height: 228px;
+      display: flex; align-items: center; justify-content: center;
+      animation: sp-logo-in .9s cubic-bezier(.34,1.56,.64,1) both;
+    }
+    @keyframes sp-logo-in {
+      from { opacity:0; transform:scale(.45) rotate(-8deg) }
+      to   { opacity:1; transform:scale(1) rotate(0deg) }
+    }
+    .sp-rings-svg {
+      position: absolute; inset: 0; width: 100%; height: 100%;
+    }
+    .ring-cw  { animation: rcw  10s linear infinite; transform-origin: 114px 114px }
+    .ring-ccw { animation: rccw 16s linear infinite; transform-origin: 114px 114px }
+    @keyframes rcw  { to { transform: rotate(360deg)  } }
+    @keyframes rccw { to { transform: rotate(-360deg) } }
+
+    /* Ambient glow blob */
+    .sp-glow {
+      position: absolute; width: 168px; height: 168px; border-radius: 50%;
+      background: radial-gradient(circle,
+        rgba(55,130,255,.24) 0%, rgba(30,80,220,.08) 55%, transparent 70%);
+      animation: sp-breathe 3.6s ease-in-out infinite; pointer-events: none;
+    }
+    @keyframes sp-breathe {
+      0%,100% { transform:scale(1);    opacity:.7 }
+      50%      { transform:scale(1.28); opacity:1  }
+    }
+
+    .sp-logo-img {
+      position: relative; z-index: 2;
+      width: 152px; height: 152px; object-fit: contain;
+      filter: drop-shadow(0 0 22px rgba(70,150,255,.6))
+              drop-shadow(0 0 55px rgba(40,90,220,.25));
+    }
+
+    /* ── Wordmark ── */
+    .sp-wordmark {
+      margin-top: 18px; text-align: center;
+      animation: sp-fadeup .9s .35s ease both;
+    }
+    .sp-title {
+      font-family: 'Inter','Segoe UI',sans-serif;
+      font-size: 3.7rem; font-weight: 800; letter-spacing: .3em; line-height: 1;
+      background: linear-gradient(135deg, #fff 0%, #b4d8ff 45%, #4080ff 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: sp-fadeup .9s .35s ease both, sp-glitch 10s 3s infinite;
+    }
+    @keyframes sp-glitch {
+      0%,86%,100% { clip-path:none; transform:none; filter:none }
+      87% { clip-path:polygon(0 0,100% 0,100% 36%,0 36%);
+            transform:translate(-5px,0); filter:hue-rotate(70deg) brightness(1.4) }
+      88% { clip-path:polygon(0 36%,100% 36%,100% 68%,0 68%);
+            transform:translate(5px,0); filter:hue-rotate(-70deg) }
+      89% { clip-path:polygon(0 68%,100% 68%,100% 100%,0 100%);
+            transform:translate(-3px,0); filter:none }
+      90% { clip-path:none; transform:none }
+    }
+    .sp-tagline {
+      margin-top: 7px;
+      font-family: 'Courier New',monospace; font-size: .58rem;
+      letter-spacing: .3em; text-transform: uppercase;
+      color: rgba(100,165,255,.45);
+    }
+
+    /* ── Circular progress ── */
+    .sp-progress {
+      margin-top: 40px; position: relative;
+      width: 86px; height: 86px;
+      animation: sp-fadeup .9s .6s ease both;
+    }
+    .sp-progress-svg { width: 86px; height: 86px; transform: rotate(-90deg) }
+    .sp-track {
+      fill: none; stroke: rgba(255,255,255,.05); stroke-width: 3.5;
+    }
+    .sp-fill {
+      fill: none; stroke: url(#spGrad); stroke-width: 3.5;
+      stroke-linecap: round;
+      stroke-dasharray: 213.6;   /* 2π × 34 */
+      stroke-dashoffset: 213.6;
+      transition: stroke-dashoffset .8s ease;
+    }
+    .sp-pct {
+      position: absolute; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Inter','Segoe UI',sans-serif;
+      font-size: .88rem; font-weight: 700;
+      color: rgba(175,220,255,.9);
+    }
+
+    /* ── Terminal status ── */
+    .sp-terminal {
+      margin-top: 22px;
+      display: flex; align-items: center; gap: 8px;
+      font-family: 'Courier New',monospace; font-size: .73rem;
+      color: rgba(105,175,255,.62);
+      width: 330px; justify-content: center;
+      animation: sp-fadeup .9s .85s ease both;
+    }
+    .sp-prompt { color: rgba(75,205,125,.85); flex-shrink: 0 }
+    .sp-ttext  { flex:1; min-width:0; overflow:hidden; white-space:nowrap }
+    .sp-cursor {
+      width: 7px; height: 1em; flex-shrink: 0;
+      background: rgba(100,175,255,.75);
+      animation: sp-blink 1.1s step-end infinite;
+    }
+    @keyframes sp-blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+    /* ── Shared fade-up ── */
+    @keyframes sp-fadeup {
+      from { opacity:0; transform:translateY(14px) }
+      to   { opacity:1; transform:translateY(0) }
+    }
+
+    /* ── Flash on ready ── */
+    .sp-flash {
+      position: absolute; inset: 0; pointer-events: none;
+      background: rgba(45,220,120,.065); opacity: 0; transition: opacity .25s;
+    }
+    .sp-flash.on { opacity: 1 }
+
+    /* ── Version label ── */
+    .sp-ver {
+      position: absolute; bottom: 18px; left: 50%; transform: translateX(-50%);
+      font-family: 'Courier New',monospace; font-size: .57rem;
+      letter-spacing: .16em; color: rgba(45,85,155,.4);
+      white-space: nowrap; animation: sp-fadeup 1s 1.2s ease both;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ══════════════════════════════════════════════════════════
+       PULSE — Premium Splash Screen
+  ══════════════════════════════════════════════════════════ -->
+  <div id="pulse-splash" role="status" aria-live="polite" aria-label="Chargement de PULSE">
+
+    <!-- Canvas : réseau de particules -->
+    <canvas id="splash-canvas"></canvas>
+
+    <!-- Fond grid + vignette + scan -->
+    <div class="sp-grid"></div>
+    <div class="sp-vignette"></div>
+    <div class="sp-scan"></div>
+
+    <!-- Coins HUD -->
+    <div class="sp-corner sp-tl"></div>
+    <div class="sp-corner sp-tr"></div>
+    <div class="sp-corner sp-bl"></div>
+    <div class="sp-corner sp-br"></div>
+
+    <!-- Contenu centré -->
+    <div class="sp-center">
+
+      <!-- Logo + anneaux rotatifs -->
+      <div class="sp-logo-frame">
+        <svg class="sp-rings-svg" viewBox="0 0 228 228" fill="none">
+          <defs>
+            <linearGradient id="spGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%"   stop-color="#2b6fff"/>
+              <stop offset="50%"  stop-color="#7ab8ff"/>
+              <stop offset="100%" stop-color="#2b6fff"/>
+            </linearGradient>
+          </defs>
+          <!-- Anneau extérieur, CCW -->
+          <circle class="ring-ccw" cx="114" cy="114" r="108"
+            stroke="rgba(55,125,255,.16)" stroke-width="1"
+            stroke-dasharray="9 16"/>
+          <!-- Anneau intérieur, CW -->
+          <circle class="ring-cw" cx="114" cy="114" r="90"
+            stroke="rgba(80,158,255,.28)" stroke-width="1"
+            stroke-dasharray="3 8"/>
+          <!-- Petits marqueurs sur l'anneau extérieur -->
+          <circle class="ring-ccw" cx="114" cy="6"  r="3" fill="rgba(80,160,255,.5)"/>
+          <circle class="ring-ccw" cx="114" cy="222" r="3" fill="rgba(80,160,255,.5)"/>
+        </svg>
+        <div class="sp-glow"></div>
+        <img src="{{ url_for('static', filename='img/gif_logo.gif') }}"
+             alt="PULSE" class="sp-logo-img" draggable="false"/>
+      </div>
+
+      <!-- Titre -->
+      <div class="sp-wordmark">
+        <div class="sp-title">PULSE</div>
+        <div class="sp-tagline">Data Intelligence &nbsp;·&nbsp; DCF Groupe</div>
+      </div>
+
+      <!-- Anneau de progression circulaire -->
+      <div class="sp-progress">
+        <svg class="sp-progress-svg" viewBox="0 0 86 86">
+          <circle class="sp-track" cx="43" cy="43" r="34"/>
+          <circle class="sp-fill"  cx="43" cy="43" r="34" id="sp-ring"/>
+        </svg>
+        <div class="sp-pct" id="sp-pct">0%</div>
+      </div>
+
+      <!-- Terminal -->
+      <div class="sp-terminal">
+        <span class="sp-prompt">›</span>
+        <span class="sp-ttext" id="sp-ttext"></span>
+        <span class="sp-cursor"></span>
+      </div>
+
+    </div>
+
+    <!-- Flash vert au ready -->
+    <div class="sp-flash" id="sp-flash"></div>
+
+    <!-- Version -->
+    <div class="sp-ver">PULSE v2.0 &nbsp;·&nbsp; SNCF DCF Groupe &nbsp;·&nbsp; 2025</div>
+  </div>
+
+  <script>
+  (function () {
+    'use strict';
+
+    /* ── Une seule fois par session ──────────────────────────────── */
+    const SPLASH_KEY = 'pulse_splash_done';
+    if (sessionStorage.getItem(SPLASH_KEY)) {
+      document.getElementById('pulse-splash').remove();
+      return;
+    }
+
+    /* ── Canvas : réseau de particules ──────────────────────────── */
+    const canvas = document.getElementById('splash-canvas');
+    const ctx    = canvas.getContext('2d');
+    let W, H, pts, raf;
+
+    function resize() {
+      W = canvas.width  = window.innerWidth;
+      H = canvas.height = window.innerHeight;
+    }
+    function mkPt() {
+      return {
+        x:  Math.random() * W, y:  Math.random() * H,
+        vx: (Math.random() - .5) * .44, vy: (Math.random() - .5) * .44,
+        r:  Math.random() * 1.6 + .5,   a:  Math.random() * .45 + .12,
+      };
+    }
+    function initPts() { pts = Array.from({length: 56}, mkPt); }
+    function frame() {
+      ctx.clearRect(0, 0, W, H);
+      for (const p of pts) {
+        p.x += p.vx; p.y += p.vy;
+        if (p.x < 0) p.x = W; else if (p.x > W) p.x = 0;
+        if (p.y < 0) p.y = H; else if (p.y > H) p.y = 0;
+        ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, 6.283);
+        ctx.fillStyle = `rgba(58,128,240,${p.a})`; ctx.fill();
+      }
+      for (let i = 0; i < pts.length; i++) {
+        for (let j = i + 1; j < pts.length; j++) {
+          const dx = pts[i].x - pts[j].x, dy = pts[i].y - pts[j].y;
+          const d  = Math.hypot(dx, dy);
+          if (d < 150) {
+            ctx.beginPath();
+            ctx.moveTo(pts[i].x, pts[i].y);
+            ctx.lineTo(pts[j].x, pts[j].y);
+            ctx.strokeStyle = `rgba(48,118,235,${.17 * (1 - d/150)})`;
+            ctx.lineWidth = .8; ctx.stroke();
+          }
+        }
+      }
+      raf = requestAnimationFrame(frame);
+    }
+    resize(); initPts(); frame();
+    window.addEventListener('resize', () => { resize(); initPts(); });
+
+    /* ── Anneau de progression ───────────────────────────────────── */
+    const ringEl = document.getElementById('sp-ring');
+    const pctEl  = document.getElementById('sp-pct');
+    const CIRC   = 213.6;   /* 2π × 34 */
+    let fakePct  = 0, done  = false;
+
+    function setProgress(p) {
+      const c = Math.min(100, Math.max(0, p));
+      ringEl.style.strokeDashoffset = CIRC * (1 - c / 100);
+      pctEl.textContent = Math.round(c) + '%';
+    }
+    const progTimer = setInterval(() => {
+      if (done) return;
+      fakePct += (92 - fakePct) * .09 + .35;
+      if (fakePct > 92) fakePct = 92;
+      setProgress(fakePct);
+    }, 700);
+
+    /* ── Typewriter ──────────────────────────────────────────────── */
+    const MSGS = [
+      'Initialisation du système',
+      'Connexion aux sources de données',
+      'Chargement des flux financiers',
+      'Analyse des historiques SNCF',
+      'Calcul des indicateurs DCF',
+      'Préparation des tableaux de bord',
+      'Optimisation du cache mémoire',
+      'Mise en place des modèles ML',
+      'Synchronisation des prévisions',
+      "Vérification de l'intégrité des données",
+      'Finalisation du chargement',
+    ];
+    const ttEl = document.getElementById('sp-ttext');
+    let mi = 0, ci = 0, ph = 'type', ts = '', twt;
+
+    function twTick() {
+      if (done && ph !== 'ready') return;
+      if (ph === 'type') {
+        if (ci < MSGS[mi].length) { ts += MSGS[mi][ci++]; ttEl.textContent = ts; twt = setTimeout(twTick, 36); }
+        else { ph = 'hold'; twt = setTimeout(twTick, 2100); }
+      } else if (ph === 'hold') {
+        ph = 'erase'; twTick();
+      } else if (ph === 'erase') {
+        if (ts.length > 0) { ts = ts.slice(0,-1); ttEl.textContent = ts; twt = setTimeout(twTick, 17); }
+        else { mi = (mi+1) % MSGS.length; ci = 0; ph = 'type'; twt = setTimeout(twTick, 240); }
+      }
+    }
+    twTick();
+
+    /* ── Dismiss ─────────────────────────────────────────────────── */
+    function dismiss() {
+      if (done) return; done = true;
+      sessionStorage.setItem(SPLASH_KEY, '1');
+      clearInterval(progTimer); clearTimeout(twt);
+
+      setProgress(100);
+
+      setTimeout(() => {
+        ttEl.textContent = 'Système prêt — Bienvenue dans PULSE';
+        ttEl.style.color = 'rgba(75,210,125,.88)';
+      }, 380);
+
+      const flash = document.getElementById('sp-flash');
+      setTimeout(() => { flash.classList.add('on'); setTimeout(() => flash.classList.remove('on'), 360); }, 320);
+
+      setTimeout(() => {
+        const sp = document.getElementById('pulse-splash');
+        sp.classList.add('splash--out');
+        cancelAnimationFrame(raf);
+        sp.addEventListener('transitionend', () => sp.remove(), { once: true });
+      }, 1050);
+    }
+
+    /* ── Polling /api/status ─────────────────────────────────────── */
+    async function checkReady() {
+      try {
+        const r = await fetch('/api/status', { cache: 'no-store' });
+        if (!r.ok) return false;
+        const d = await r.json();
+        if (d.ready) { dismiss(); return true; }
+      } catch (_) {}
+      return false;
+    }
+
+    /* Fallback : ferme après 90 s quoi qu'il arrive */
+    const fallback = setTimeout(() => {
+      if (!done) {
+        ttEl.textContent = 'Accès en mode dégradé';
+        ttEl.style.color = 'rgba(255,140,80,.8)';
+        setTimeout(dismiss, 2000);
+      }
+    }, 90000);
+
+    checkReady().then(ok => {
+      if (!ok) {
+        const t = setInterval(async () => {
+          const ready = await checkReady();
+          if (ready) { clearInterval(t); clearTimeout(fallback); }
+        }, 1400);
+      } else { clearTimeout(fallback); }
+    });
+
+  }());
+  </script>
+
+  <div class="app-shell">
+
+    <!-- ============================================================
+         HEADER
+    ============================================================ -->
+    <header class="header">
+
+      <!-- Logo zone -->
+      <div class="header-logo">
+        <a href="/" class="brand-link" aria-label="Retour à l'accueil PULSE">
+          <img src="{{ url_for('static', filename='img/logo_Pulse.png') }}"
+               alt="PULSE logo" class="logo-img" />
+          <div class="brand-copy">
+            <span class="logo-text">PULSE</span>
+            <span class="logo-version">v2</span>
+          </div>
+        </a>
+      </div>
+
+      <!-- Centre : toggle + breadcrumb -->
+      <div class="header-center">
+        <button
+          id="sidebar-toggle"
+          class="sidebar-toggle-btn"
+          type="button"
+          aria-label="Réduire ou ouvrir la barre latérale"
+          aria-expanded="true"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+            <line x1="4" y1="7" x2="20" y2="7"/>
+            <line x1="4" y1="12" x2="20" y2="12"/>
+            <line x1="4" y1="17" x2="20" y2="17"/>
+          </svg>
+        </button>
+
+        <nav class="header-breadcrumb" aria-label="Fil d'Ariane">
+          <svg class="breadcrumb-home-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+            <path d="M3 12L12 3l9 9"/><path d="M9 21V12h6v9"/>
+          </svg>
+          <span class="breadcrumb-root">DCF Groupe</span>
+          <svg class="breadcrumb-sep-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <polyline points="9 18 15 12 9 6"/>
+          </svg>
+          <span class="current">{% block breadcrumb %}Dashboard{% endblock %}</span>
+        </nav>
+      </div>
+
+      <!-- Droite : status + date -->
+      <div class="header-right">
+        {% block header_right %}
+        <div class="header-date" id="header-clock"></div>
+        <div class="status-pill">
+          <span class="status-dot"></span>
+          <span>Opérationnel</span>
+        </div>
+        {% endblock %}
+      </div>
+
+    </header>
+
+    <!-- ============================================================
+         LAYOUT
+    ============================================================ -->
+    <div class="layout">
+
+      <!-- Sidebar -->
+      <aside id="sidebar" class="sidebar" aria-label="Navigation principale">
+        <div class="sidebar-body">
+
+          <!-- Principal -->
+          <div class="nav-group">
+            <p class="nav-group-label">Principal</p>
+            <a href="/" class="nav-item {% if active_page == 'accueil' %}active{% endif %}">
+              <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+                <path d="M3 12L12 3l9 9"/><path d="M9 21V12h6v9"/>
+              </svg>
+              <span>Tableau de bord</span>
+            </a>
+            <a href="/import" class="nav-item {% if active_page == 'import_profils' %}active{% endif %}">
+              <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+                <polyline points="7 10 12 15 17 10"/>
+                <line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+              <span>Import des profils</span>
+            </a>
+          </div>
+
+          <!-- Surveillance -->
+          <div class="nav-group">
+            <p class="nav-group-label">Surveillance</p>
+            <a href="/ecarts" class="nav-item {% if active_page == 'ecarts' %}active{% endif %}">
+              <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+                <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+                <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+              </svg>
+              <span>Écarts importants</span>
+            </a>
+            <a href="/tendance" class="nav-item {% if active_page == 'tendance' %}active{% endif %}">
+              <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+              </svg>
+              <span>Tendance flux</span>
+            </a>
+          </div>
+
+          <!-- Analyse -->
+          <div class="nav-group">
+            <p class="nav-group-label">Analyse</p>
+            <a href="/visualisation" class="nav-item {% if active_page == 'visualisation' %}active{% endif %}">
+              <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+                <circle cx="12" cy="12" r="1.5"/>
+                <path d="M2 12C4 7 8 4 12 4s8 3 10 8c-2 5-6 8-10 8S4 17 2 12z"/>
+              </svg>
+              <span>Visualisation</span>
+            </a>
+            <a href="/visualisation_flux" class="nav-item {% if active_page == 'visualisation_flux' %}active{% endif %}">
+              <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+                <line x1="5" y1="3" x2="5" y2="21" stroke-width="1.5" opacity=".5"/>
+              </svg>
+              <span>Superposition années</span>
+            </a>
+            <a href="/repartition" class="nav-item {% if active_page == 'repartition' %}active{% endif %}">
+              <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+                <rect x="18" y="3" width="3" height="18" rx="1"/>
+                <rect x="10.5" y="8" width="3" height="13" rx="1"/>
+                <rect x="3" y="13" width="3" height="8" rx="1"/>
+              </svg>
+              <span>Répartition filiales</span>
+            </a>
+            <a href="/repartition_flux" class="nav-item {% if active_page == 'repartition_flux' %}active{% endif %}">
+              <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+                <line x1="3" y1="8"  x2="21" y2="8"/>
+                <line x1="3" y1="12" x2="17" y2="12"/>
+                <line x1="3" y1="16" x2="13" y2="16"/>
+              </svg>
+              <span>Répartition par flux</span>
+            </a>
+            <a href="/prevision_repartition" class="nav-item {% if active_page == 'prevision_repartition' %}active{% endif %}">
+              <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+                <line x1="3" y1="12" x2="21" y2="12"/>
+                <rect x="3" y="2" width="4" height="8" rx="1"/>
+                <rect x="9" y="5" width="4" height="14" rx="1"/>
+                <rect x="15" y="3" width="4" height="16" rx="1"/>
+              </svg>
+              <span>Par profil</span>
+            </a>
+          </div>
+
+          <!-- Intelligence artificielle -->
+          <div class="nav-group">
+            <p class="nav-group-label">Intelligence artificielle</p>
+            <a href="/heatmap" class="nav-item {% if active_page == 'heatmap' %}active{% endif %}">
+              <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+                <rect x="3" y="3" width="18" height="18" rx="2"/>
+                <line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/>
+                <line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/>
+              </svg>
+              <span>Heatmap des anomalies</span>
+            </a>
+            <a href="/heatmap_ecarts" class="nav-item {% if active_page == 'heatmap_ecarts' %}active{% endif %}">
+              <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+                <rect x="3" y="3" width="18" height="18" rx="2"/>
+                <line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/>
+                <line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/>
+              </svg>
+              <span>Heatmap des écarts</span>
+            </a>
+            <a href="/ml_ecarts" class="nav-item {% if active_page == 'ml_ecarts' %}active{% endif %}">
+              <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+                <circle cx="12" cy="4" r="2"/><circle cx="4" cy="20" r="2"/><circle cx="20" cy="20" r="2"/>
+                <line x1="12" y1="6" x2="4" y2="18"/><line x1="12" y1="6" x2="20" y2="18"/>
+                <line x1="4" y1="18" x2="20" y2="18"/>
+              </svg>
+              <span>Clustering ML</span>
+            </a>
+            <span class="nav-item disabled">
+              <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+                <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                <path d="M2 17l10 5 10-5M2 12l10 5 10-5"/>
+              </svg>
+              <span>3D Clustering</span>
+              <span class="nav-badge">Soon</span>
+            </span>
+          </div>
+
+          {% block sidebar_extra %}{% endblock %}
+        </div>
+
+        <!-- Footer sidebar -->
+        <div class="sidebar-footer">
+          <div class="sidebar-footer__brand">
+            <img src="{{ url_for('static', filename='img/logo_Pulse.png') }}"
+                 alt="PULSE" class="sidebar-footer__logo" />
+            <span class="sidebar-footer__name">PULSE</span>
+          </div>
+          <div class="sidebar-footer__sub">DCF Groupe &copy; 2025 — Monitoring & Flux</div>
+        </div>
+      </aside>
+
+      <!-- Content -->
+      <main class="content">
+        <div class="content-shell">
+          {% block content %}{% endblock %}
+        </div>
+      </main>
+
+    </div>
+  </div>
+
+  <!-- Toast container -->
+  <div id="toast-container" aria-live="polite" aria-atomic="true"></div>
+
+  <script>
+    window.toast = (msg, type = "success") => {
+      const container = document.getElementById("toast-container");
+      if (!container) return;
+
+      const t = document.createElement("div");
+      t.className = `toast toast--${type}`;
+      t.textContent = msg;
+      container.appendChild(t);
+
+      requestAnimationFrame(() => {
+        t.style.opacity = "1";
+        t.style.transform = "translateY(0)";
+      });
+
+      setTimeout(() => {
+        t.style.opacity = "0";
+        t.style.transform = "translateY(8px)";
+        setTimeout(() => t.remove(), 220);
+      }, 3200);
+    };
+  </script>
+
+  <script>
+    (() => {
+      const body = document.body;
+      const toggleBtn = document.getElementById("sidebar-toggle");
+      const STORAGE_KEY = "pulse-sidebar-collapsed";
+
+      if (!toggleBtn) return;
+
+      const applyState = (collapsed) => {
+        body.classList.toggle("sidebar-collapsed", collapsed);
+        toggleBtn.setAttribute("aria-expanded", collapsed ? "false" : "true");
+      };
+
+      const savedState = localStorage.getItem(STORAGE_KEY);
+      applyState(savedState === "1");
+
+      toggleBtn.addEventListener("click", () => {
+        const collapsedNow = !body.classList.contains("sidebar-collapsed");
+        applyState(collapsedNow);
+        localStorage.setItem(STORAGE_KEY, collapsedNow ? "1" : "0");
+      });
+    })();
+  </script>
+
+  <!-- Horloge header -->
+  <script>
+    (() => {
+      const el = document.getElementById("header-clock");
+      if (!el) return;
+      const tick = () => {
+        const now = new Date();
+        const d = now.toLocaleDateString("fr-FR", { weekday: "short", day: "2-digit", month: "short" });
+        const t = now.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+        el.innerHTML = `<span class="hclock-date">${d}</span><span class="hclock-sep">·</span><span class="hclock-time">${t}</span>`;
+      };
+      tick();
+      setInterval(tick, 10000);
+    })();
+  </script>
+
+  {% block scripts %}{% endblock %}
+</body>
+</html>

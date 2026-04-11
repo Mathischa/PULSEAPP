@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+{% set active_page = "repartition_flux" %}
+{% block title %}Répartition par Flux{% endblock %}
+{% block breadcrumb %}Analyse · Répartition par flux{% endblock %}
+
+{% block head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+  <div class="page-header-text">
+    <h1>Répartition des écarts par flux</h1>
+    <p class="subtitle">
+      Volume d'écarts, fréquence et valorisation signée par flux — avec filtres filiale, année et profil.
+    </p>
+  </div>
+</div>
+
+<!-- Filtres -->
+<div class="filters-bar">
+  <div class="filter-group">
+    <label class="filter-label" for="f-section">Filiale / Section</label>
+    <select class="filter-select" id="f-section" style="min-width:200px;">
+      <option value="">Toute filiale</option>
+    </select>
+  </div>
+
+  <div class="filter-group">
+    <label class="filter-label" for="f-annee">Année</label>
+    <select class="filter-select" id="f-annee" style="min-width:140px;">
+      <option value="">Toutes</option>
+    </select>
+  </div>
+
+  <div class="filter-group">
+    <label class="filter-label" for="f-profil">Profil <span style="font-size:11px;opacity:.6;">(valorisation uniquement)</span></label>
+    <select class="filter-select" id="f-profil" style="min-width:220px;">
+      <option value="">Tous profils</option>
+    </select>
+  </div>
+
+  <div class="filters-actions">
+    <button class="btn btn--primary" id="btn-analyser">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <circle cx="11" cy="11" r="8"></circle>
+        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+      </svg>
+      Analyser
+    </button>
+  </div>
+</div>
+
+<!-- Loading -->
+<div id="state-loading" class="loading-state" hidden>
+  <div class="spinner"></div>
+  Agrégation des écarts par flux…
+</div>
+
+<!-- Erreur -->
+<div id="state-error" class="error-state" hidden>
+  ⚠ <span id="error-msg">Erreur inconnue</span>
+</div>
+
+<!-- Résultat -->
+<div id="state-result" hidden>
+
+  <!-- KPIs -->
+  <div class="kpi-grid" style="grid-template-columns:repeat(auto-fit,minmax(160px,1fr));margin-bottom:16px;" id="kpi-row"></div>
+
+  <!-- Chart 1 : Volume -->
+  <div class="chart-container">
+    <div class="chart-header">
+      <div>
+        <div class="chart-title">Nombre d'écarts importants par flux</div>
+        <div class="chart-subtitle">Volume d'écarts ≥ 40 % détectés pour chaque flux</div>
+      </div>
+    </div>
+    <div class="chart-canvas-wrap" id="wrap-chart1" style="height:420px;">
+      <canvas id="chart-volume"></canvas>
+    </div>
+  </div>
+
+  <!-- Chart 2 : Fréquence -->
+  <div class="chart-container">
+    <div class="chart-header">
+      <div>
+        <div class="chart-title">Pourcentage d'écarts par flux</div>
+        <div class="chart-subtitle">Rapport entre écarts significatifs et prévisions non vides</div>
+      </div>
+    </div>
+    <div class="chart-canvas-wrap" id="wrap-chart2" style="height:420px;">
+      <canvas id="chart-freq"></canvas>
+    </div>
+  </div>
+
+  <!-- Chart 3 : Valorisation -->
+  <div class="chart-container">
+    <div class="chart-header">
+      <div>
+        <div class="chart-title">Valorisation signée des écarts</div>
+        <div class="chart-subtitle">Montant cumulé signé des écarts (k€) — filtrable par profil</div>
+      </div>
+    </div>
+    <div class="chart-canvas-wrap" id="wrap-chart3" style="height:420px;">
+      <canvas id="chart-valo"></canvas>
+    </div>
+  </div>
+
+  <!-- Tableau -->
+  <div class="table-wrap">
+    <table class="data-table" id="table-flux">
+      <thead>
+        <tr>
+          <th>Flux</th>
+          <th class="num">Prévisions</th>
+          <th class="num">Écarts ≥ 40 %</th>
+          <th class="num">% Écarts</th>
+          <th class="num">Valorisation (k€)</th>
+        </tr>
+      </thead>
+      <tbody id="tbody-flux"></tbody>
+    </table>
+  </div>
+
+</div><!-- /state-result -->
+
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/repartition_flux.js') }}"></script>
+{% endblock %}

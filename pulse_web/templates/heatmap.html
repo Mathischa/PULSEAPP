@@ -1,0 +1,348 @@
+{% extends "base.html" %}
+{% set active_page = "heatmap" %}
+{% block title %}Heatmap des anomalies — PULSE{% endblock %}
+{% block breadcrumb %}Analyse · Heatmap des anomalies{% endblock %}
+
+{% block head %}
+<style>
+/* ── DESIGN SYSTEM (MATCH TKINTER) ────────────────────────── */
+:root {
+  --bg: #0B0F17;
+  --topbar: #11161F;
+  --surface: #141A24;
+  --surface-2: #1A2230;
+  --surface-3: #212B3A;
+  --border: #2B3647;
+  --border-soft: #212A38;
+  --text: #F3F4F6;
+  --text-soft: #D1D5DB;
+  --muted: #9CA3AF;
+  --muted-2: #7C8798;
+  --neutral: #3F4B5F;
+  --neutral-hover: #556178;
+  --table-bg: #131A25;
+  --table-header: #1D2634;
+  --table-selected: #3F4B5F;
+}
+
+/* ── PAGE CONTAINER ──────────────────────────────────────── */
+.page-header {
+  padding: 24px 28px;
+  background: linear-gradient(135deg, rgba(15,23,42,.4) 0%, rgba(30,41,59,.2) 100%);
+  border-bottom: 1px solid rgba(255,255,255,.05);
+}
+.page-header-text h1 {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0;
+}
+.page-header-text .subtitle {
+  font-size: 12px;
+  color: var(--muted-2);
+  margin: 6px 0 0;
+}
+
+/* ── LAYOUT ──────────────────────────────────────────────── */
+.hm-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 28px;
+}
+
+/* ── FILTRES ─────────────────────────────────────────────── */
+.hm-filters {
+  display: flex;
+  align-items: flex-end;
+  gap: 16px;
+  padding: 16px 20px;
+  background: rgba(255,255,255,.03);
+  border: 1px solid rgba(255,255,255,.07);
+  border-radius: 14px;
+  flex-wrap: wrap;
+}
+.hm-filter-group { display: flex; flex-direction: column; gap: 6px; }
+.hm-filter-label {
+  font-size: 10px; font-weight: 700;
+  color: #4C7CF3; text-transform: uppercase; letter-spacing: .08em;
+}
+
+/* ── BADGE RÉSUMÉ ────────────────────────────────────────── */
+.hm-summary-row {
+  display: flex; gap: 10px; flex-wrap: wrap;
+  align-items: center;
+  padding: 0 2px;
+}
+.hm-chip {
+  font-size: 11px; font-weight: 600; padding: 5px 12px;
+  border-radius: 20px; border: 1px solid;
+}
+.hm-chip--red    { background: rgba(239,68,68,.1);   border-color: rgba(239,68,68,.3);   color: #FCA5A5; }
+.hm-chip--blue   { background: rgba(76,124,243,.1);  border-color: rgba(76,124,243,.3);  color: #93C5FD; }
+.hm-chip--muted  { background: rgba(255,255,255,.04);border-color: rgba(255,255,255,.1); color: #64748B; }
+
+/* ── CARTE HEATMAP ───────────────────────────────────────── */
+.hm-card {
+  background: rgba(255,255,255,.03);
+  border: 1px solid rgba(255,255,255,.07);
+  border-radius: 14px;
+  overflow: hidden;
+}
+.hm-card-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 18px 12px;
+  border-bottom: 1px solid rgba(255,255,255,.06);
+}
+.hm-card-title { font-size: 13px; font-weight: 700; color: #CBD5E1; }
+.hm-card-sub   { font-size: 11px; color: #475569; margin-top: 2px; }
+
+/* ── TABLE HEATMAP ───────────────────────────────────────── */
+.hm-table-wrap {
+  overflow-x: auto;
+  padding: 16px;
+}
+.hm-table {
+  border-collapse: collapse;
+  font-size: 11px;
+  white-space: nowrap;
+}
+.hm-table th {
+  padding: 6px 10px;
+  font-size: 10px; font-weight: 700; color: #64748B;
+  text-transform: uppercase; letter-spacing: .05em;
+  border-bottom: 1px solid rgba(255,255,255,.07);
+  text-align: center;
+  position: sticky; top: 0;
+  background: #0a0e18;
+  z-index: 2;
+}
+.hm-table th.hm-profil-header {
+  text-align: left;
+  min-width: 140px;
+  position: sticky; left: 0; z-index: 3;
+  background: #0a0e18;
+}
+.hm-table td {
+  padding: 0;
+  border: 1px solid rgba(255,255,255,.04);
+}
+.hm-table td.hm-profil-cell {
+  padding: 7px 12px;
+  font-size: 11px; font-weight: 600; color: #94A3B8;
+  position: sticky; left: 0;
+  background: #0d1118;
+  z-index: 1;
+  min-width: 140px;
+  border-right: 1px solid rgba(255,255,255,.1);
+}
+.hm-cell {
+  min-width: 72px; height: 36px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 700;
+  cursor: pointer;
+  transition: transform .1s, box-shadow .1s;
+  position: relative;
+}
+.hm-cell:hover {
+  transform: scale(1.12);
+  box-shadow: 0 0 0 2px #fff inset;
+  z-index: 10;
+}
+.hm-cell.hm-cell--zero {
+  color: #1e2840;
+  cursor: default;
+  background: rgba(255,255,255,.02) !important;
+}
+.hm-cell.hm-cell--zero:hover { transform: none; box-shadow: none; }
+.hm-cell.hm-cell--selected {
+  box-shadow: 0 0 0 2.5px #4C7CF3 inset !important;
+}
+
+/* Légende colorscale */
+.hm-legend {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 16px 14px;
+  font-size: 10px; color: #475569;
+}
+.hm-legend-scale {
+  display: flex; height: 10px; border-radius: 5px; overflow: hidden;
+  width: 120px; flex-shrink: 0;
+}
+
+/* ── DÉTAILS ─────────────────────────────────────────────── */
+.hm-detail-header {
+  padding: 14px 18px 10px;
+  border-bottom: 1px solid rgba(255,255,255,.06);
+}
+.hm-detail-title  { font-size: 13px; font-weight: 700; color: #F3F4F6; }
+.hm-detail-sub    { font-size: 11px; color: #64748B; margin-top: 3px; }
+
+.hm-detail-table-wrap { overflow-x: auto; padding: 12px 16px 16px; }
+.hm-detail-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+.hm-detail-table th {
+  padding: 7px 12px; text-align: left;
+  font-size: 10px; font-weight: 700; color: #64748B;
+  text-transform: uppercase; letter-spacing: .05em;
+  border-bottom: 1px solid rgba(255,255,255,.07);
+  white-space: nowrap;
+}
+.hm-detail-table td {
+  padding: 8px 12px; color: #CBD5E1;
+  border-bottom: 1px solid rgba(255,255,255,.04);
+}
+.hm-detail-table tr:last-child td { border-bottom: none; }
+.hm-detail-table .pos { color: #4ADE80; }
+.hm-detail-table .neg { color: #F87171; }
+
+/* ── ÉTATS ───────────────────────────────────────────────── */
+.hm-state {
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  min-height: 260px; gap: 14px;
+  color: #475569; font-size: 13px; text-align: center;
+  line-height: 1.6; padding: 24px;
+}
+.hm-state-icon {
+  width: 60px; height: 60px; border-radius: 14px;
+  border: 1px solid rgba(239,68,68,.25);
+  background: rgba(239,68,68,.06);
+  display: flex; align-items: center; justify-content: center;
+}
+.hm-error {
+  background: rgba(239,68,68,.08); border: 1px solid rgba(239,68,68,.25);
+  border-radius: 10px; padding: 12px 16px; color: #F87171; font-size: 12px;
+  margin: 16px;
+}
+
+/* Tooltip survol */
+.hm-tooltip {
+  position: fixed;
+  background: #1A2230; border: 1px solid rgba(255,255,255,.15);
+  border-radius: 10px; padding: 10px 14px;
+  font-size: 11px; color: #CBD5E1;
+  pointer-events: none; z-index: 9999;
+  box-shadow: 0 8px 24px rgba(0,0,0,.4);
+  max-width: 240px; line-height: 1.6;
+  display: none;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+  <div class="page-header-text">
+    <h1>Heatmap des anomalies</h1>
+    <p class="subtitle">Détection des anomalies par IsolationForest — vue Profil × Flux, cliquez sur une cellule pour le détail.</p>
+  </div>
+</div>
+
+<!-- Tooltip global -->
+<div class="hm-tooltip" id="hm-tooltip"></div>
+
+<div class="hm-layout">
+
+  <!-- ── FILTRES ── -->
+  <div class="hm-filters">
+    <div class="hm-filter-group">
+      <div class="hm-filter-label">Filiale / Section</div>
+      <select class="filter-select" id="hm-section" style="min-width:220px;">
+        <option value="">Choisir…</option>
+      </select>
+    </div>
+    <div class="hm-filter-group">
+      <div class="hm-filter-label">Année</div>
+      <select class="filter-select" id="hm-annee" disabled style="min-width:120px;">
+        <option value="">—</option>
+      </select>
+    </div>
+    <button class="btn btn--primary" id="btn-hm-lancer" disabled
+            style="align-self:flex-end;gap:7px;">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <rect x="3" y="3" width="18" height="18" rx="2"/>
+        <path d="M3 9h18M9 21V9"/>
+      </svg>
+      Générer la heatmap
+    </button>
+
+    <!-- Résumé après chargement -->
+    <div class="hm-summary-row" id="hm-summary" style="margin-left:auto;"></div>
+  </div>
+
+  <!-- ── HEATMAP CARD ── -->
+  <div class="hm-card">
+    <div class="hm-card-header">
+      <div>
+        <div class="hm-card-title" id="hm-title">Heatmap des anomalies</div>
+        <div class="hm-card-sub">Profils (lignes) × Flux (colonnes) · Valeur = nombre d'anomalies détectées</div>
+      </div>
+    </div>
+
+    <!-- État initial -->
+    <div class="hm-state" id="hm-idle">
+      <div class="hm-state-icon">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#EF4444" stroke-width="1.5">
+          <rect x="3" y="3" width="18" height="18" rx="2"/>
+          <path d="M3 9h18M9 21V9"/>
+        </svg>
+      </div>
+      <div>
+        <strong style="color:#94A3B8;display:block;margin-bottom:4px;">Aucune heatmap générée</strong>
+        Choisissez une filiale et une année, puis cliquez sur <em>Générer la heatmap</em>.
+      </div>
+    </div>
+
+    <!-- Loading -->
+    <div class="hm-state" id="hm-loading" hidden>
+      <div class="spinner"></div>
+      <span>Analyse en cours… (IsolationForest)</span>
+    </div>
+
+    <!-- Erreur -->
+    <div id="hm-error" hidden>
+      <div class="hm-error">⚠ <span id="hm-error-msg">Erreur</span></div>
+    </div>
+
+    <!-- Résultat -->
+    <div id="hm-result" hidden>
+      <div class="hm-table-wrap">
+        <table class="hm-table" id="hm-table">
+          <thead id="hm-thead"></thead>
+          <tbody id="hm-tbody"></tbody>
+        </table>
+      </div>
+      <!-- Légende -->
+      <div class="hm-legend">
+        <span>0</span>
+        <div class="hm-legend-scale" id="hm-legend-scale"></div>
+        <span id="hm-legend-max">max</span>
+        <span style="margin-left:8px;">anomalies</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── DÉTAILS CELLULE ── -->
+  <div class="hm-card" id="hm-detail-card">
+    <div class="hm-detail-header">
+      <div class="hm-detail-title" id="hm-detail-title">Aucune cellule sélectionnée</div>
+      <div class="hm-detail-sub"  id="hm-detail-sub">Cliquez sur une cellule colorée pour afficher le détail des anomalies.</div>
+    </div>
+    <div class="hm-detail-table-wrap" id="hm-detail-body">
+      <div class="hm-state" style="min-height:120px;">
+        <span style="color:#475569;font-size:12px;">Sélectionnez une cellule dans la heatmap.</span>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /hm-layout -->
+
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/heatmap.js') }}"></script>
+{% endblock %}

@@ -1,0 +1,469 @@
+{% extends "base.html" %}
+{% set active_page = "visualisation" %}
+{% block title %}Visualisation Graphique{% endblock %}
+{% block breadcrumb %}Analyse · Visualisation graphique{% endblock %}
+
+{% block head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
+<style>
+/* ── LAYOUT ─────────────────────────────────────────────── */
+.visu-layout {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 0;
+  align-items: stretch;
+  min-height: calc(100vh - 160px);
+}
+@media (max-width: 1024px) {
+  .visu-layout { grid-template-columns: 1fr; }
+}
+
+/* ── PANNEAU GAUCHE ──────────────────────────────────────── */
+.ctrl-panel {
+  background: #0e1420;
+  border-right: 1px solid rgba(255,255,255,.07);
+  border-radius: 16px 0 0 16px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.ctrl-header {
+  padding: 20px 20px 16px;
+  border-bottom: 1px solid rgba(255,255,255,.07);
+  background: rgba(76,124,243,.06);
+}
+.ctrl-header-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #F3F4F6;
+  letter-spacing: .02em;
+}
+.ctrl-header-sub {
+  font-size: 11px;
+  color: #64748B;
+  margin-top: 3px;
+}
+.ctrl-body {
+  flex: 1;
+  padding: 18px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  overflow-y: auto;
+}
+.ctrl-group { display: flex; flex-direction: column; gap: 6px; }
+.ctrl-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: #4C7CF3;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+.ctrl-sep {
+  height: 1px;
+  background: rgba(255,255,255,.07);
+  margin: 2px 0;
+}
+
+/* ── TYPE DE GRAPHIQUE ───────────────────────────────────── */
+.chart-type-row { display: flex; gap: 6px; }
+.chart-type-btn {
+  flex: 1;
+  padding: 9px 4px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,.1);
+  background: rgba(255,255,255,.04);
+  color: #94A3B8;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: center;
+  transition: all .18s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.chart-type-btn:hover { background: rgba(76,124,243,.15); color: #93C5FD; border-color: rgba(76,124,243,.4); }
+.chart-type-btn.active {
+  background: #4C7CF3;
+  border-color: #4C7CF3;
+  color: #fff;
+  box-shadow: 0 0 12px rgba(76,124,243,.45);
+}
+
+/* ── TOGGLE RÉEL ─────────────────────────────────────────── */
+.reel-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  padding: 9px 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,.08);
+  background: rgba(255,255,255,.03);
+  transition: background .15s;
+}
+.reel-toggle:hover { background: rgba(255,255,255,.07); }
+.reel-dot {
+  width: 10px; height: 10px; border-radius: 50%;
+  background: #fff; flex-shrink: 0;
+}
+.reel-toggle span { font-size: 12px; color: #CBD5E1; flex: 1; }
+.reel-toggle input { accent-color: #4C7CF3; width: 15px; height: 15px; cursor: pointer; }
+
+/* ── PROFILS ─────────────────────────────────────────────── */
+.profils-container {
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 12px;
+  overflow: hidden;
+  background: rgba(255,255,255,.02);
+}
+.profils-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px;
+  border-bottom: 1px solid rgba(255,255,255,.06);
+  background: rgba(255,255,255,.03);
+}
+.profils-toolbar-label { font-size: 11px; color: #64748B; }
+.profils-action-link {
+  font-size: 11px;
+  color: #4C7CF3;
+  cursor: pointer;
+  text-decoration: none;
+  background: none; border: none; padding: 0;
+}
+.profils-action-link:hover { color: #93C5FD; text-decoration: underline; }
+.profils-list {
+  display: flex;
+  flex-direction: column;
+  max-height: 240px;
+  overflow-y: auto;
+}
+.profil-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 10px;
+  cursor: pointer;
+  transition: background .1s;
+  border-bottom: 1px solid rgba(255,255,255,.04);
+}
+.profil-item:last-child { border-bottom: none; }
+.profil-item:hover { background: rgba(255,255,255,.05); }
+.profil-item input[type=checkbox] { accent-color: #4C7CF3; width: 14px; height: 14px; cursor: pointer; flex-shrink: 0; }
+.profil-color-bar { width: 3px; height: 18px; border-radius: 2px; flex-shrink: 0; }
+.profil-name { font-size: 12px; color: #CBD5E1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.profils-empty { padding: 14px 12px; font-size: 12px; color: #475569; text-align: center; }
+
+/* ── PÉRIODE ─────────────────────────────────────────────── */
+.periode-row { display: grid; grid-template-columns: 1fr auto 1fr; gap: 6px; align-items: center; }
+.periode-arrow { color: #475569; font-size: 13px; text-align: center; }
+
+/* ── BOUTON ──────────────────────────────────────────────── */
+.ctrl-footer { padding: 14px 16px; border-top: 1px solid rgba(255,255,255,.07); }
+
+/* ── PANNEAU GRAPHIQUE ───────────────────────────────────── */
+.chart-panel {
+  background: #0a0e18;
+  border-radius: 0 16px 16px 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.chart-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 24px 16px;
+  border-bottom: 1px solid rgba(255,255,255,.06);
+  background: rgba(255,255,255,.02);
+  flex-shrink: 0;
+}
+.chart-info-title { font-size: 16px; font-weight: 700; color: #F3F4F6; }
+.chart-info-sub   { font-size: 12px; color: #64748B; margin-top: 3px; }
+.chart-badges { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.chart-badge {
+  font-size: 11px; font-weight: 600; padding: 4px 10px;
+  border-radius: 20px; border: 1px solid;
+}
+.chart-badge--section { background: rgba(76,124,243,.12); border-color: rgba(76,124,243,.35); color: #93C5FD; }
+.chart-badge--annee   { background: rgba(39,174,96,.1);   border-color: rgba(39,174,96,.35);  color: #6EE7B7; }
+.chart-badge--type    { background: rgba(255,255,255,.06); border-color: rgba(255,255,255,.12); color: #94A3B8; }
+
+/* ── ZONE CANVAS ─────────────────────────────────────────── */
+.chart-area {
+  flex: 1;
+  position: relative;
+  padding: 16px 20px 20px;
+  min-height: 520px;
+}
+.chart-area > * { height: 100%; }
+
+/* ── ÉTATS ───────────────────────────────────────────────── */
+.visu-loading {
+  display: flex; align-items: center; justify-content: center;
+  gap: 14px; height: 100%; color: #64748B; font-size: 13px;
+}
+.visu-error {
+  display: flex; align-items: flex-start; gap: 12px;
+  background: rgba(192,57,43,.12); border: 1px solid rgba(192,57,43,.3);
+  border-radius: 12px; padding: 16px 18px; color: #F87171; font-size: 13px;
+  margin: 20px;
+}
+.visu-placeholder {
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  height: 100%; gap: 16px; color: #475569;
+  font-size: 13px; text-align: center; line-height: 1.6;
+}
+.visu-placeholder-icon {
+  width: 72px; height: 72px; border-radius: 18px;
+  background: rgba(76,124,243,.08); border: 1px solid rgba(76,124,243,.2);
+  display: flex; align-items: center; justify-content: center;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+  <div class="page-header-text">
+    <h1>Visualisation Graphique</h1>
+    <p class="subtitle">Comparez le réel aux prévisions par filiale, flux, année et profil.</p>
+  </div>
+</div>
+
+<div class="visu-layout">
+
+  <!-- ══════════════════════════════════════════
+       PANNEAU DE CONTRÔLE
+  ══════════════════════════════════════════ -->
+  <div class="ctrl-panel">
+
+    <div class="ctrl-header">
+      <div class="ctrl-header-title">Paramètres</div>
+      <div class="ctrl-header-sub">Configurez votre sélection</div>
+    </div>
+
+    <div class="ctrl-body">
+
+      <!-- Filiale -->
+      <div class="ctrl-group">
+        <div class="ctrl-label">Filiale / Section</div>
+        <select class="filter-select" id="f-section" style="width:100%;">
+          <option value="">Choisir…</option>
+        </select>
+      </div>
+
+      <!-- Flux -->
+      <div class="ctrl-group">
+        <div class="ctrl-label">Flux</div>
+        <select class="filter-select" id="f-flux" style="width:100%;" disabled>
+          <option value="">— sélectionner une section —</option>
+        </select>
+      </div>
+
+      <!-- Année -->
+      <div class="ctrl-group">
+        <div class="ctrl-label">Année</div>
+        <select class="filter-select" id="f-annee" style="width:100%;" disabled>
+          <option value="">Toutes</option>
+        </select>
+      </div>
+
+      <div class="ctrl-sep"></div>
+
+      <!-- Période -->
+      <div class="ctrl-group">
+        <div class="ctrl-label">Filtre de période</div>
+        <div class="periode-row">
+          <select class="filter-select" id="f-mois-debut">
+            <option value="1">Janvier</option><option value="2">Février</option>
+            <option value="3">Mars</option><option value="4">Avril</option>
+            <option value="5">Mai</option><option value="6">Juin</option>
+            <option value="7">Juillet</option><option value="8">Août</option>
+            <option value="9">Septembre</option><option value="10">Octobre</option>
+            <option value="11">Novembre</option><option value="12">Décembre</option>
+          </select>
+          <div class="periode-arrow">→</div>
+          <select class="filter-select" id="f-mois-fin">
+            <option value="1">Janvier</option><option value="2">Février</option>
+            <option value="3">Mars</option><option value="4">Avril</option>
+            <option value="5">Mai</option><option value="6">Juin</option>
+            <option value="7">Juillet</option><option value="8">Août</option>
+            <option value="9">Septembre</option><option value="10">Octobre</option>
+            <option value="11">Novembre</option><option value="12">Décembre</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="ctrl-sep"></div>
+
+      <!-- Série Réel -->
+      <div class="ctrl-group">
+        <div class="ctrl-label">Série réel</div>
+        <label class="reel-toggle">
+          <span class="reel-dot"></span>
+          <span>Afficher le Réel</span>
+          <input type="checkbox" id="chk-reel" checked>
+        </label>
+      </div>
+
+      <!-- Profils -->
+      <div class="ctrl-group">
+        <div class="ctrl-label">Profils de prévision</div>
+        <div class="profils-container">
+          <div class="profils-toolbar">
+            <span class="profils-toolbar-label" id="profils-count">—</span>
+            <span>
+              <button class="profils-action-link" id="btn-sel-all">Tout cocher</button>
+              &nbsp;·&nbsp;
+              <button class="profils-action-link" id="btn-sel-none">Tout décocher</button>
+            </span>
+          </div>
+          <div class="profils-list" id="profils-list">
+            <div class="profils-empty">Sélectionnez un flux.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="ctrl-sep"></div>
+
+      <!-- Granularité -->
+      <div class="ctrl-group">
+        <div class="ctrl-label">Granularité</div>
+        <div class="chart-type-row">
+          <button class="chart-type-btn" id="btn-jour" onclick="setGranularite('jour')">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <circle cx="12" cy="12" r="5"/><line x1="12" y1="2" x2="12" y2="4"/>
+              <line x1="12" y1="20" x2="12" y2="22"/><line x1="2" y1="12" x2="4" y2="12"/>
+              <line x1="20" y1="12" x2="22" y2="12"/>
+            </svg>
+            Journalier
+          </button>
+          <button class="chart-type-btn active" id="btn-mois" onclick="setGranularite('mois')">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/>
+              <line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+            </svg>
+            Mensuel
+          </button>
+        </div>
+      </div>
+
+      <!-- Type de graphique -->
+      <div class="ctrl-group">
+        <div class="ctrl-label">Type de graphique</div>
+        <div class="chart-type-row">
+          <button class="chart-type-btn active" id="btn-line" onclick="setChartType('line')">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+            </svg>
+            Linéaire
+          </button>
+          <button class="chart-type-btn" id="btn-bar" onclick="setChartType('bar')">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <rect x="18" y="3" width="3" height="18" rx="1"/>
+              <rect x="10.5" y="8" width="3" height="13" rx="1"/>
+              <rect x="3" y="13" width="3" height="8" rx="1"/>
+            </svg>
+            Cumulé
+          </button>
+        </div>
+      </div>
+
+    </div><!-- /ctrl-body -->
+
+    <!-- Bouton -->
+    <div class="ctrl-footer">
+      <button class="btn btn--primary" id="btn-afficher" style="width:100%;justify-content:center;" disabled>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+        </svg>
+        Afficher le graphique
+      </button>
+    </div>
+
+  </div><!-- /ctrl-panel -->
+
+  <!-- ══════════════════════════════════════════
+       ZONE GRAPHIQUE
+  ══════════════════════════════════════════ -->
+  <div class="chart-panel">
+
+    <!-- Topbar -->
+    <div class="chart-topbar">
+      <div>
+        <div class="chart-info-title" id="chart-title">Graphique</div>
+        <div class="chart-info-sub"   id="chart-subtitle">Sélectionnez une filiale et un flux</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div class="chart-badges" id="chart-badges">
+          <span class="chart-badge chart-badge--type" id="chart-type-badge">Linéaire</span>
+        </div>
+        <button id="btn-reset-zoom" onclick="resetZoom()" title="Réinitialiser le zoom" hidden
+          style="display:none;align-items:center;gap:5px;padding:5px 10px;font-size:11px;font-weight:600;
+                 background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:8px;
+                 color:#94A3B8;cursor:pointer;transition:all .15s;">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+            <path d="M3 3v5h5"/>
+          </svg>
+          Reset zoom
+        </button>
+      </div>
+    </div>
+
+    <!-- Zone canvas -->
+    <div class="chart-area">
+
+      <!-- Loading -->
+      <div class="visu-loading" id="state-loading" hidden>
+        <div class="spinner"></div>
+        Chargement des données…
+      </div>
+
+      <!-- Erreur -->
+      <div id="state-error" hidden>
+        <div class="visu-error">
+          ⚠&nbsp; <span id="error-msg">Erreur inconnue</span>
+        </div>
+      </div>
+
+      <!-- Placeholder initial -->
+      <div class="visu-placeholder" id="state-empty">
+        <div class="visu-placeholder-icon">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#4C7CF3" stroke-width="1.5">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+          </svg>
+        </div>
+        <div>
+          <strong style="color:#94A3B8;display:block;margin-bottom:4px;">Aucun graphique affiché</strong>
+          Sélectionnez une filiale et un flux dans le panneau de gauche,<br>
+          cochez les profils à afficher, puis cliquez sur <em>Afficher le graphique</em>.
+        </div>
+      </div>
+
+      <!-- Canvas -->
+      <div id="state-result" hidden style="height:100%;min-height:500px;">
+        <div id="chart-wrap" style="position:relative;width:100%;height:100%;"></div>
+      </div>
+
+    </div><!-- /chart-area -->
+
+  </div><!-- /chart-panel -->
+
+</div><!-- /visu-layout -->
+
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/visualisation.js') }}"></script>
+{% endblock %}

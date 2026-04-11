@@ -1,0 +1,549 @@
+{% extends "base.html" %}
+{% set active_page = "import_profils" %}
+{% block title %}Import des profils{% endblock %}
+{% block breadcrumb %}Données · Import des profils{% endblock %}
+
+{% block head %}
+<style>
+/* ══════════════════════════════════════════════════════
+   Import des profils — styles spécifiques
+══════════════════════════════════════════════════════ */
+
+/* ── Layout principal ── */
+.ip-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* ── Bouton danger (absent de pulse.css) ── */
+.btn--danger {
+  background: #DC2626;
+  color: #fff;
+  border-color: transparent;
+}
+.btn--danger:hover:not(:disabled) {
+  background: #B91C1C;
+  transform: translateY(-1px);
+}
+
+.ip-grid {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 20px;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .ip-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── Cards ── */
+.ip-card {
+  background: rgba(255, 255, 255, .03);
+  border: 1px solid rgba(255, 255, 255, .07);
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.ip-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, .06);
+}
+
+.ip-card-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #CBD5E1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ip-card-title svg {
+  width: 15px;
+  height: 15px;
+  opacity: .65;
+}
+
+.ip-card-body {
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* ── Colonne droite (stack de cards) ── */
+.ip-right-col {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* ── Champs formulaire ── */
+.ip-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ip-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: #4C7CF3;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+
+.ip-select,
+.ip-input {
+  background: rgba(255, 255, 255, .04);
+  border: 1px solid rgba(255, 255, 255, .10);
+  border-radius: 8px;
+  color: #E2E8F0;
+  font-size: 13px;
+  padding: 8px 12px;
+  outline: none;
+  width: 100%;
+  transition: border-color .15s;
+  font-family: inherit;
+}
+
+.ip-select:focus,
+.ip-input:focus {
+  border-color: rgba(76, 124, 243, .55);
+  box-shadow: 0 0 0 3px rgba(76, 124, 243, .12);
+}
+
+.ip-select option {
+  background: #0d1118;
+  color: #E2E8F0;
+}
+
+/* ── Tableau des fichiers ── */
+.ip-table-wrap {
+  overflow-x: auto;
+  max-height: 480px;
+  overflow-y: auto;
+  border-radius: 0 0 14px 14px;
+}
+
+.ip-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.ip-table thead th {
+  position: sticky;
+  top: 0;
+  background: #0d1118;
+  padding: 9px 14px;
+  font-size: 10px;
+  font-weight: 700;
+  color: #64748B;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  border-bottom: 1px solid rgba(255, 255, 255, .07);
+  white-space: nowrap;
+  z-index: 2;
+}
+
+.ip-table thead th:first-child {
+  width: 38px;
+  text-align: center;
+}
+
+.ip-table tbody td {
+  padding: 9px 14px;
+  color: #CBD5E1;
+  border-bottom: 1px solid rgba(255, 255, 255, .04);
+  vertical-align: middle;
+}
+
+.ip-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.ip-table tbody tr:hover td {
+  background: rgba(76, 124, 243, .06);
+}
+
+.ip-table td:first-child {
+  text-align: center;
+}
+
+.ip-filename {
+  font-family: 'Courier New', monospace;
+  font-size: 11.5px;
+  color: #93C5FD;
+  word-break: break-all;
+}
+
+.ip-filepath {
+  font-size: 10px;
+  color: #475569;
+  margin-top: 2px;
+  word-break: break-all;
+}
+
+/* Checkbox custom */
+.ip-check {
+  width: 15px;
+  height: 15px;
+  accent-color: #4C7CF3;
+  cursor: pointer;
+}
+
+/* ── État vide du tableau ── */
+.ip-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 220px;
+  gap: 12px;
+  color: #475569;
+  font-size: 13px;
+  text-align: center;
+  padding: 24px;
+}
+
+.ip-empty-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 12px;
+  border: 1px solid rgba(76, 124, 243, .2);
+  background: rgba(76, 124, 243, .05);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── Badge compteur ── */
+.ip-count-badge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: 20px;
+  background: rgba(76, 124, 243, .12);
+  border: 1px solid rgba(76, 124, 243, .25);
+  color: #93C5FD;
+  margin-left: 8px;
+}
+
+/* ── Status réel ── */
+.ip-status {
+  font-size: 12px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  line-height: 1.5;
+  word-break: break-all;
+}
+
+.ip-status--success {
+  background: rgba(74, 222, 128, .08);
+  border: 1px solid rgba(74, 222, 128, .2);
+  color: #4ADE80;
+}
+
+.ip-status--warning {
+  background: rgba(251, 191, 36, .08);
+  border: 1px solid rgba(251, 191, 36, .2);
+  color: #FCD34D;
+}
+
+.ip-status--neutral {
+  background: rgba(255, 255, 255, .04);
+  border: 1px solid rgba(255, 255, 255, .08);
+  color: #64748B;
+}
+
+/* ── Barre de progression ── */
+.ip-progress-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ip-progress-bar-track {
+  width: 100%;
+  height: 8px;
+  background: rgba(255, 255, 255, .07);
+  border-radius: 20px;
+  overflow: hidden;
+}
+
+.ip-progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #4C7CF3, #7B5CF5);
+  border-radius: 20px;
+  transition: width .4s ease;
+  width: 0%;
+}
+
+.ip-progress-pct {
+  font-size: 11px;
+  font-weight: 700;
+  color: #93C5FD;
+}
+
+.ip-progress-msg {
+  font-size: 12px;
+  color: #94A3B8;
+  margin-top: 2px;
+}
+
+/* ── Boutons actions ── */
+.ip-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* ── Spinner overlay dans le tableau ── */
+.ip-loading-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 40px 24px;
+  color: #64748B;
+  font-size: 13px;
+}
+
+/* ── Message de succès/erreur final ── */
+.ip-result-msg {
+  font-size: 12px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  margin-top: 8px;
+}
+
+.ip-result-msg--success {
+  background: rgba(74, 222, 128, .08);
+  border: 1px solid rgba(74, 222, 128, .2);
+  color: #4ADE80;
+}
+
+.ip-result-msg--error {
+  background: rgba(248, 113, 113, .08);
+  border: 1px solid rgba(248, 113, 113, .2);
+  color: #F87171;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+  <div class="page-header-text">
+    <h1>Import des profils</h1>
+    <p class="subtitle">Détection automatique des fichiers profil Tréso SNCF et import vers les fichiers historiques Excel.</p>
+  </div>
+</div>
+
+<div class="ip-layout">
+  <div class="ip-grid">
+
+    <!-- ══════════════════════════════
+         COLONNE GAUCHE — Tableau fichiers
+    ══════════════════════════════ -->
+    <div class="ip-card" id="card-files">
+      <div class="ip-card-header">
+        <div class="ip-card-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="16" y1="13" x2="8" y2="13"/>
+            <line x1="16" y1="17" x2="8" y2="17"/>
+          </svg>
+          Fichiers profil détectés
+          <span class="ip-count-badge" id="files-count" hidden>0</span>
+        </div>
+        <button class="btn btn--danger btn--sm" id="btn-delete-sel" hidden>
+          Supprimer la sélection
+        </button>
+      </div>
+
+      <!-- État initial -->
+      <div id="files-empty-state" class="ip-empty-state">
+        <div class="ip-empty-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4C7CF3" stroke-width="1.5">
+            <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+            <polyline points="7 10 12 15 17 10"/>
+            <line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+        </div>
+        <div>
+          <strong style="color:#94A3B8;display:block;margin-bottom:4px;">Aucun fichier scanné</strong>
+          Sélectionnez une année et un dossier, puis cliquez sur <em>Scanner</em>.
+        </div>
+      </div>
+
+      <!-- Spinner scan -->
+      <div id="files-loading" class="ip-loading-row" hidden>
+        <div class="spinner"></div>
+        Scan en cours…
+      </div>
+
+      <!-- Tableau -->
+      <div class="ip-table-wrap" id="files-table-wrap" hidden>
+        <table class="ip-table">
+          <thead>
+            <tr>
+              <th>
+                <input type="checkbox" class="ip-check" id="check-all" title="Tout sélectionner / désélectionner">
+              </th>
+              <th>Fichier</th>
+            </tr>
+          </thead>
+          <tbody id="files-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════
+         COLONNE DROITE — Paramètres + Actions
+    ══════════════════════════════ -->
+    <div class="ip-right-col">
+
+      <!-- Card Paramètres -->
+      <div class="ip-card">
+        <div class="ip-card-header">
+          <div class="ip-card-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <circle cx="12" cy="12" r="3"/>
+              <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/>
+            </svg>
+            Paramètres
+          </div>
+        </div>
+        <div class="ip-card-body">
+          <div class="ip-field">
+            <label class="ip-label" for="sel-year">Année</label>
+            <select class="ip-select" id="sel-year"></select>
+          </div>
+          <div class="ip-field">
+            <label class="ip-label" for="inp-folder">Dossier des profils</label>
+            <div style="display:flex;gap:6px;align-items:stretch;">
+              <input class="ip-input" type="text" id="inp-folder"
+                     placeholder="Ex : C:\Données\Profils\2024"
+                     style="flex:1;min-width:0;" />
+              <button class="btn btn--secondary" id="btn-browse"
+                      type="button" title="Parcourir le dossier"
+                      style="white-space:nowrap;flex-shrink:0;padding:8px 12px;">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+                  <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/>
+                </svg>
+                Parcourir
+              </button>
+            </div>
+          </div>
+          <button class="btn btn--primary" id="btn-scan" style="width:100%;justify-content:center;gap:8px;">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <circle cx="11" cy="11" r="8"/>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+            Scanner
+          </button>
+        </div>
+      </div>
+
+      <!-- Card Statut réel -->
+      <div class="ip-card">
+        <div class="ip-card-header">
+          <div class="ip-card-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+            </svg>
+            Fichier réel
+          </div>
+        </div>
+        <div class="ip-card-body">
+          <div class="ip-status ip-status--neutral" id="reel-status">
+            En attente d'un scan…
+          </div>
+        </div>
+      </div>
+
+      <!-- Card Actions -->
+      <div class="ip-card">
+        <div class="ip-card-header">
+          <div class="ip-card-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <polygon points="5 3 19 12 5 21 5 3"/>
+            </svg>
+            Actions
+          </div>
+        </div>
+        <div class="ip-card-body ip-actions">
+          <button class="btn btn--secondary" id="btn-reset" style="width:100%;justify-content:center;gap:8px;">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <polyline points="1 4 1 10 7 10"/>
+              <path d="M3.51 15a9 9 0 102.13-9.36L1 10"/>
+            </svg>
+            Réinitialiser
+          </button>
+          <button class="btn btn--danger" id="btn-delete-sel-2" style="width:100%;justify-content:center;gap:8px;" hidden>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <polyline points="3 6 5 6 21 6"/>
+              <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/>
+              <path d="M10 11v6M14 11v6"/>
+            </svg>
+            Supprimer la sélection
+          </button>
+          <button class="btn btn--primary" id="btn-launch"
+                  style="width:100%;justify-content:center;gap:8px;"
+                  disabled>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+              <polyline points="7 10 12 15 17 10"/>
+              <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            Lancer l'import
+          </button>
+        </div>
+      </div>
+
+      <!-- Card Progression (cachée jusqu'au lancement) -->
+      <div class="ip-card" id="card-progress" hidden>
+        <div class="ip-card-header">
+          <div class="ip-card-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <line x1="12" y1="2" x2="12" y2="6"/>
+              <line x1="12" y1="18" x2="12" y2="22"/>
+              <line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/>
+              <line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/>
+              <line x1="2" y1="12" x2="6" y2="12"/>
+              <line x1="18" y1="12" x2="22" y2="12"/>
+              <line x1="4.93" y1="19.07" x2="7.76" y2="16.24"/>
+              <line x1="16.24" y1="7.76" x2="19.07" y2="4.93"/>
+            </svg>
+            Progression
+          </div>
+          <span class="ip-progress-pct" id="progress-pct">0 %</span>
+        </div>
+        <div class="ip-card-body ip-progress-wrap">
+          <div class="ip-progress-bar-track">
+            <div class="ip-progress-bar-fill" id="progress-bar-fill"></div>
+          </div>
+          <div class="ip-progress-msg" id="progress-msg">Initialisation…</div>
+          <div id="progress-result" class="ip-result-msg" hidden></div>
+        </div>
+      </div>
+
+    </div><!-- /ip-right-col -->
+  </div><!-- /ip-grid -->
+</div><!-- /ip-layout -->
+
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/import_profils.js') }}"></script>
+{% endblock %}

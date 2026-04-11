@@ -1,0 +1,187 @@
+/* ================================================================
+   PULSE — Accueil (Dashboard Home) — Couche premium spécifique
+   Chargée après pulse.css via {% block head %} dans accueil.html
+   ================================================================ */
+
+/* ── HERO: Grille de fond faint ─────────────────────────────── */
+.hero-grid-bg {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(77, 135, 245, 0.032) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(77, 135, 245, 0.032) 1px, transparent 1px);
+  background-size: 36px 36px;
+  -webkit-mask-image: radial-gradient(ellipse 90% 90% at 72% 38%, black 15%, transparent 70%);
+  mask-image:         radial-gradient(ellipse 90% 90% at 72% 38%, black 15%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ── KPI ICONS: sizing SVG, neutralise le font-size emoji ──── */
+.kpi-icon {
+  font-size: 0;
+}
+
+.kpi-icon svg {
+  width: 20px;
+  height: 20px;
+  display: block;
+  flex-shrink: 0;
+}
+
+.kpi-icon--blue   { color: var(--primary); }
+.kpi-icon--green  { color: var(--success); }
+.kpi-icon--purple { color: var(--accent);  }
+.kpi-icon--orange { color: var(--warning); }
+
+/* ── INSIGHT BOX ICONS: boîte colorée + SVG centré ─────────── */
+.insight-box__icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 14px;
+  font-size: 0;
+  flex-shrink: 0;
+}
+
+.insight-box__icon svg {
+  width: 17px;
+  height: 17px;
+  display: block;
+}
+
+.insight-box__icon--blue   { background: var(--primary-lt); color: var(--primary); }
+.insight-box__icon--purple { background: var(--accent-lt);  color: var(--accent);  }
+.insight-box__icon--green  { background: var(--success-lt); color: var(--success); }
+
+/* ── HERO PANEL: divider + stats secondaires ────────────────── */
+.hero-panel-card__divider {
+  height: 1px;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.10), rgba(255, 255, 255, 0.02));
+  margin: 20px 0 18px;
+}
+
+.hero-panel-stats {
+  display: flex;
+  align-items: center;
+}
+
+.hero-panel-stat {
+  flex: 1;
+  text-align: center;
+}
+
+.hero-panel-stat__sep {
+  width: 1px;
+  height: 32px;
+  background: rgba(255, 255, 255, 0.08);
+  flex-shrink: 0;
+}
+
+.hero-panel-stat__val {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.035em;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.hero-panel-stat__lbl {
+  font-size: 9.5px;
+  color: var(--text-3);
+  text-transform: uppercase;
+  letter-spacing: 0.9px;
+  font-weight: 700;
+}
+
+/* ── STAT ROW: bordure couleur par type ─────────────────────── */
+.stat-item--years    { border-top: 2px solid rgba(77,  135, 245, 0.40); }
+.stat-item--filiales { border-top: 2px solid rgba(123,  92, 245, 0.40); }
+.stat-item--recents  { border-top: 2px solid rgba(50,  213, 131, 0.40); }
+.stat-item--health   { border-top: 2px solid rgba(50,  213, 131, 0.40); }
+
+.stat-value--ok { color: var(--success); }
+
+/* ── TABLE TOOLBAR: icône info SVG ──────────────────────────── */
+.table-info__icon-svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  opacity: 0.55;
+  color: var(--primary);
+}
+
+/* ── TABLE: cellule fichier avec icône ──────────────────────── */
+.td-file-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.td-file-icon {
+  width: 30px;
+  height: 30px;
+  background: var(--primary-lt);
+  border: 1px solid rgba(77, 135, 245, 0.18);
+  border-radius: 7px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--primary);
+  transition: background var(--t), border-color var(--t);
+}
+
+.td-file-text {
+  min-width: 0;
+}
+
+.mini-table tbody tr:hover .td-file-icon {
+  background: rgba(77, 135, 245, 0.18);
+  border-color: rgba(77, 135, 245, 0.30);
+}
+
+/* ── EMPTY STATE: icône SVG ─────────────────────────────────── */
+.empty-state-icon {
+  width: 40px;
+  height: 40px;
+  color: var(--text-4);
+  opacity: 0.5;
+  margin-bottom: 4px;
+}
+
+/* ── ERROR STATE: icône SVG ─────────────────────────────────── */
+.error-icon-svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  color: var(--danger);
+}
+
+/* ── SKELETONS supplémentaires ──────────────────────────────── */
+.skeleton-stat {
+  height: 66px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--border);
+}
+
+.skeleton-card-sm {
+  height: 160px;
+  border-radius: var(--r-lg);
+  border: 1px solid var(--border);
+}
+
+/* ── RESPONSIVE ─────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .hero-grid-bg { display: none; }
+}
+
+@media (max-width: 480px) {
+  .hero-panel-stats { gap: 0; }
+}

@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% set active_page = "repartition" %}
+{% block title %}Répartition Filiales{% endblock %}
+{% block breadcrumb %}Analyse · Répartition par filiale{% endblock %}
+
+{% block head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+  <div class="page-header-text">
+    <h1>Répartition par Filiale</h1>
+    <p class="subtitle">Distribution des écarts ≥ 40 % — favorables vs défavorables par section</p>
+  </div>
+</div>
+
+<!-- Filtres -->
+<div class="filters-bar">
+  <div class="filter-group">
+    <label class="filter-label">Année</label>
+    <select class="filter-select" id="f-annee"><option value="">Toutes</option></select>
+  </div>
+  <div class="filters-actions">
+    <button class="btn btn--primary" id="btn-analyser">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
+        <polyline points="17 6 23 6 23 12"/>
+      </svg>
+      Actualiser
+    </button>
+  </div>
+</div>
+
+<!-- Loading -->
+<div id="state-loading" class="loading-state">
+  <div class="spinner"></div>
+  Agrégation des données par filiale…
+</div>
+
+<!-- Résultats -->
+<div id="state-result" hidden>
+
+  <!-- KPIs -->
+  <div class="kpi-grid" style="grid-template-columns:repeat(auto-fit,minmax(160px,1fr));" id="kpi-row"></div>
+
+  <!-- Charts -->
+  <div style="display:grid;grid-template-columns:2fr 1fr;gap:12px;margin:16px 0;">
+
+    <div class="chart-container" style="margin-bottom:0;">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title">Écarts par filiale</div>
+          <div class="chart-subtitle">Favorable (vert) vs Défavorable (rouge)</div>
+        </div>
+      </div>
+      <div class="chart-canvas-wrap" style="height:280px;">
+        <canvas id="chart-bar"></canvas>
+      </div>
+    </div>
+
+    <div class="chart-container" style="margin-bottom:0;">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title">Répartition globale</div>
+          <div class="chart-subtitle">Toutes filiales confondues</div>
+        </div>
+      </div>
+      <div class="chart-canvas-wrap" style="height:280px;">
+        <canvas id="chart-donut"></canvas>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Table détail -->
+  <div class="table-wrap">
+    <table class="data-table" id="table-repartition">
+      <thead>
+        <tr>
+          <th data-col="filiale">   <span class="sort-arrow">Filiale</span></th>
+          <th data-col="nb_ecarts"  class="num"><span class="sort-arrow">Total écarts</span></th>
+          <th data-col="nb_favorables"   class="num"><span class="sort-arrow">Favorables</span></th>
+          <th data-col="nb_defavorables" class="num"><span class="sort-arrow">Défavorables</span></th>
+          <th data-col="pct_favorables"  class="num"><span class="sort-arrow">% Fav.</span></th>
+          <th data-col="ecart_moy_pct"   class="num"><span class="sort-arrow">Écart moy. (%)</span></th>
+          <th data-col="ecart_max_pct"   class="num"><span class="sort-arrow">Écart max (%)</span></th>
+        </tr>
+      </thead>
+      <tbody id="tbody-repartition"></tbody>
+    </table>
+  </div>
+
+</div><!-- /state-result -->
+
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/repartition.js') }}"></script>
+{% endblock %}

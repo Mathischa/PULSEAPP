@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% set active_page = "ecarts" %}
+{% block title %}Écarts Importants{% endblock %}
+{% block breadcrumb %}Analyse · Écarts importants{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+  <div class="page-header-text">
+    <h1>Analyse des Écarts Importants</h1>
+    <p class="subtitle">Écarts ≥ 40 % entre valeur réalisée et prévision, toutes filiales</p>
+  </div>
+  <div class="page-header-actions">
+    <button class="btn btn--secondary btn--sm" id="btn-export" disabled>⬇ Exporter CSV</button>
+  </div>
+</div>
+
+<!-- Filtres -->
+<div class="filters-bar">
+  <div class="filter-group">
+    <label class="filter-label">Année</label>
+    <select class="filter-select" id="f-annee"><option value="">Toutes</option></select>
+  </div>
+  <div class="filter-group">
+    <label class="filter-label">Filiale</label>
+    <select class="filter-select" id="f-filiale"><option value="">Toutes</option></select>
+  </div>
+  <div class="filter-group">
+    <label class="filter-label">Flux</label>
+    <select class="filter-select" id="f-flux" style="min-width:200px;"><option value="">Tous</option></select>
+  </div>
+  <div class="filter-group">
+    <label class="filter-label">Favorabilité</label>
+    <select class="filter-select" id="f-fav">
+      <option value="">Tous</option>
+      <option value="true">✅ Favorable</option>
+      <option value="false">❌ Défavorable</option>
+    </select>
+  </div>
+</div>
+
+<!-- Loading -->
+<div id="loading" class="loading-state">
+  <div class="spinner"></div>
+  Calcul des écarts en cours…
+</div>
+
+<!-- Table -->
+<div id="table-container" hidden>
+
+  <div class="table-toolbar">
+    <div class="table-info">
+      <span id="table-count">—</span>
+    </div>
+    <div class="table-legend">
+      <div class="legend-item"><span class="dot dot--green"></span> Favorable</div>
+      <div class="legend-item"><span class="dot dot--red"></span> Défavorable</div>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <table class="data-table" id="ecarts-table">
+      <thead>
+        <tr>
+          <th data-col="date">      <span class="sort-arrow">Date</span></th>
+          <th data-col="profil">    <span class="sort-arrow">Profil</span></th>
+          <th data-col="filiale">   <span class="sort-arrow">Filiale</span></th>
+          <th data-col="flux">      <span class="sort-arrow">Flux</span></th>
+          <th data-col="reel"       class="num"><span class="sort-arrow">Réel (k€)</span></th>
+          <th data-col="prevision"  class="num"><span class="sort-arrow">Prévision (k€)</span></th>
+          <th data-col="ecart_k"    class="num"><span class="sort-arrow">Écart (k€)</span></th>
+          <th data-col="ecart_pct"  class="num"><span class="sort-arrow">Écart (%)</span></th>
+        </tr>
+      </thead>
+      <tbody id="ecarts-tbody"></tbody>
+    </table>
+  </div>
+
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/ecarts.js') }}"></script>
+{% endblock %}

@@ -1,0 +1,448 @@
+{% extends "base.html" %}
+{% set active_page = "visualisation_flux" %}
+{% block title %}Superposition multi-années{% endblock %}
+{% block breadcrumb %}Analyse · Superposition multi-années{% endblock %}
+
+{% block head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<style>
+/* ── LAYOUT ─────────────────────────────────────────────── */
+.visu-layout {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 0;
+  align-items: stretch;
+  min-height: calc(100vh - 160px);
+}
+@media (max-width: 1024px) {
+  .visu-layout { grid-template-columns: 1fr; }
+}
+
+/* ── PANNEAU GAUCHE ──────────────────────────────────────── */
+.ctrl-panel {
+  background: #0e1420;
+  border-right: 1px solid rgba(255,255,255,.07);
+  border-radius: 16px 0 0 16px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: sticky;
+  top: 0;
+  max-height: calc(100vh - 100px);
+}
+.ctrl-header {
+  padding: 20px 20px 16px;
+  border-bottom: 1px solid rgba(255,255,255,.07);
+  background: rgba(76,124,243,.06);
+  flex-shrink: 0;
+}
+.ctrl-header-title { font-size: 13px; font-weight: 700; color: #F3F4F6; letter-spacing: .02em; }
+.ctrl-header-sub   { font-size: 11px; color: #64748B; margin-top: 3px; }
+.ctrl-body {
+  flex: 1;
+  padding: 18px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  overflow-y: auto;
+}
+.ctrl-group { display: flex; flex-direction: column; gap: 6px; }
+.ctrl-label {
+  font-size: 10px; font-weight: 700; color: #4C7CF3;
+  text-transform: uppercase; letter-spacing: .08em;
+}
+.ctrl-sep { height: 1px; background: rgba(255,255,255,.07); margin: 2px 0; }
+.ctrl-footer { padding: 14px 16px; border-top: 1px solid rgba(255,255,255,.07); flex-shrink: 0; }
+
+/* ── PÉRIODE ─────────────────────────────────────────────── */
+.periode-row { display: grid; grid-template-columns: 1fr auto 1fr; gap: 6px; align-items: center; }
+.periode-arrow { color: #475569; font-size: 13px; text-align: center; }
+
+/* ── YEAR TOGGLES ────────────────────────────────────────── */
+.year-toggles { display: flex; flex-wrap: wrap; gap: 6px; }
+.year-btn {
+  padding: 5px 12px; border-radius: 20px;
+  border: 1px solid; font-size: 11px; font-weight: 700;
+  cursor: pointer; transition: all .18s; letter-spacing: .02em;
+}
+.year-btn.off {
+  background: rgba(255,255,255,.04) !important;
+  border-color: rgba(255,255,255,.12) !important;
+  color: #475569 !important;
+}
+.year-all-btn {
+  padding: 5px 10px; border-radius: 20px;
+  border: 1px solid rgba(255,255,255,.15); font-size: 11px; font-weight: 600;
+  cursor: pointer; background: rgba(255,255,255,.05); color: #94A3B8;
+  transition: all .18s;
+}
+.year-all-btn:hover { background: rgba(255,255,255,.1); color: #CBD5E1; }
+
+/* ── PANNEAU DROIT ───────────────────────────────────────── */
+.chart-panel {
+  background: #0a0e18;
+  border-radius: 0 16px 16px 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-width: 0;
+}
+
+/* ── TOPBAR ──────────────────────────────────────────────── */
+.chart-topbar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 18px 24px 16px;
+  border-bottom: 1px solid rgba(255,255,255,.06);
+  background: rgba(255,255,255,.02);
+  flex-shrink: 0;
+}
+.chart-info-title { font-size: 16px; font-weight: 700; color: #F3F4F6; }
+.chart-info-sub   { font-size: 12px; color: #64748B; margin-top: 3px; }
+.chart-badges { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.chart-badge {
+  font-size: 11px; font-weight: 600; padding: 4px 10px;
+  border-radius: 20px; border: 1px solid;
+}
+.chart-badge--section { background: rgba(76,124,243,.12); border-color: rgba(76,124,243,.35); color: #93C5FD; }
+.chart-badge--flux    { background: rgba(139,92,246,.12);  border-color: rgba(139,92,246,.35); color: #C4B5FD; }
+
+/* ── KPI ROW ─────────────────────────────────────────────── */
+.flux-kpi-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1px;
+  background: rgba(255,255,255,.06);
+  border-bottom: 1px solid rgba(255,255,255,.06);
+  flex-shrink: 0;
+}
+.flux-kpi {
+  background: #0c1119;
+  padding: 14px 18px;
+  display: flex; flex-direction: column; gap: 3px;
+}
+.flux-kpi__val {
+  font-size: 20px; font-weight: 700; color: #F3F4F6;
+  font-variant-numeric: tabular-nums; letter-spacing: -.035em; line-height: 1;
+}
+.flux-kpi__val--sm { font-size: 14px; }
+.flux-kpi__lbl { font-size: 10px; color: #475569; text-transform: uppercase; letter-spacing: .07em; font-weight: 600; }
+.flux-kpi__sub { font-size: 11px; color: #64748B; }
+
+/* ── CHARTS AREA ─────────────────────────────────────────── */
+.charts-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px 24px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* ── SINGLE CHART BLOCK ──────────────────────────────────── */
+.chart-block {
+  background: rgba(255,255,255,.02);
+  border: 1px solid rgba(255,255,255,.07);
+  border-radius: 14px;
+  overflow: hidden;
+}
+.chart-block__header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 18px 12px;
+  border-bottom: 1px solid rgba(255,255,255,.06);
+}
+.chart-block__title { font-size: 13px; font-weight: 700; color: #E2E8F0; }
+.chart-block__sub   { font-size: 11px; color: #64748B; margin-top: 2px; }
+.chart-block__type-row { display: flex; gap: 5px; }
+.ctype-btn {
+  padding: 5px 10px; border-radius: 8px; font-size: 11px; font-weight: 600;
+  border: 1px solid rgba(255,255,255,.1); background: rgba(255,255,255,.04);
+  color: #64748B; cursor: pointer; transition: all .15s;
+}
+.ctype-btn.active {
+  background: #4C7CF3; border-color: #4C7CF3; color: #fff;
+  box-shadow: 0 0 10px rgba(76,124,243,.4);
+}
+.ctype-btn:hover:not(.active) { background: rgba(76,124,243,.12); color: #93C5FD; border-color: rgba(76,124,243,.3); }
+.chart-block__canvas-wrap {
+  position: relative; height: 280px; padding: 14px 16px 12px;
+}
+
+/* ── ÉTATS ───────────────────────────────────────────────── */
+.state-placeholder {
+  flex: 1;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 16px; color: #475569; font-size: 13px;
+  text-align: center; line-height: 1.6;
+  padding: 48px 24px;
+}
+.state-placeholder__icon {
+  width: 72px; height: 72px; border-radius: 18px;
+  background: rgba(76,124,243,.08); border: 1px solid rgba(76,124,243,.2);
+  display: flex; align-items: center; justify-content: center;
+}
+.state-error {
+  display: flex; align-items: flex-start; gap: 12px;
+  background: rgba(192,57,43,.12); border: 1px solid rgba(192,57,43,.3);
+  border-radius: 12px; padding: 16px 18px; color: #F87171; font-size: 13px;
+  margin: 20px 24px;
+}
+.state-loading {
+  display: flex; align-items: center; justify-content: center;
+  gap: 14px; color: #64748B; font-size: 13px;
+  padding: 48px 24px;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+  <div class="page-header-text">
+    <h1>Superposition multi-années</h1>
+    <p class="subtitle">Comparez l'évolution d'un flux sur plusieurs années — vue hebdomadaire, mensuelle et annuelle.</p>
+  </div>
+</div>
+
+<div class="visu-layout">
+
+  <!-- ══════════════════════════════════════════
+       PANNEAU DE CONTRÔLE
+  ══════════════════════════════════════════ -->
+  <div class="ctrl-panel">
+
+    <div class="ctrl-header">
+      <div class="ctrl-header-title">Paramètres</div>
+      <div class="ctrl-header-sub">Section · Flux · Période · Années</div>
+    </div>
+
+    <div class="ctrl-body">
+
+      <!-- Section -->
+      <div class="ctrl-group">
+        <div class="ctrl-label">Filiale / Section</div>
+        <select class="filter-select" id="f-section" style="width:100%;">
+          <option value="">Choisir…</option>
+        </select>
+      </div>
+
+      <!-- Flux -->
+      <div class="ctrl-group">
+        <div class="ctrl-label">Flux</div>
+        <select class="filter-select" id="f-flux" style="width:100%;" disabled>
+          <option value="">— sélectionner une section —</option>
+        </select>
+      </div>
+
+      <div class="ctrl-sep"></div>
+
+      <!-- Période -->
+      <div class="ctrl-group">
+        <div class="ctrl-label">Filtre de période</div>
+        <div class="periode-row">
+          <select class="filter-select" id="f-mois-debut">
+            <option value="1">Janvier</option><option value="2">Février</option>
+            <option value="3">Mars</option><option value="4">Avril</option>
+            <option value="5">Mai</option><option value="6">Juin</option>
+            <option value="7">Juillet</option><option value="8">Août</option>
+            <option value="9">Septembre</option><option value="10">Octobre</option>
+            <option value="11">Novembre</option><option value="12">Décembre</option>
+          </select>
+          <div class="periode-arrow">→</div>
+          <select class="filter-select" id="f-mois-fin">
+            <option value="1">Janvier</option><option value="2">Février</option>
+            <option value="3">Mars</option><option value="4">Avril</option>
+            <option value="5">Mai</option><option value="6">Juin</option>
+            <option value="7">Juillet</option><option value="8">Août</option>
+            <option value="9">Septembre</option><option value="10">Octobre</option>
+            <option value="11">Novembre</option><option value="12" selected>Décembre</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="ctrl-sep"></div>
+
+      <!-- Années actives -->
+      <div class="ctrl-group">
+        <div class="ctrl-label" style="display:flex;justify-content:space-between;align-items:center;">
+          <span>Années à afficher</span>
+          <span style="display:flex;gap:4px;">
+            <button class="year-all-btn" id="btn-year-all">Tout</button>
+            <button class="year-all-btn" id="btn-year-none">Aucun</button>
+          </span>
+        </div>
+        <div class="year-toggles" id="year-toggles">
+          <span style="font-size:11px;color:#475569;">Chargez des données…</span>
+        </div>
+      </div>
+
+    </div><!-- /ctrl-body -->
+
+    <div class="ctrl-footer">
+      <button class="btn btn--primary" id="btn-afficher" style="width:100%;justify-content:center;" disabled>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+        </svg>
+        Afficher la superposition
+      </button>
+    </div>
+
+  </div><!-- /ctrl-panel -->
+
+  <!-- ══════════════════════════════════════════
+       ZONE GRAPHIQUES
+  ══════════════════════════════════════════ -->
+  <div class="chart-panel">
+
+    <!-- Topbar -->
+    <div class="chart-topbar">
+      <div>
+        <div class="chart-info-title" id="chart-title">Superposition multi-années</div>
+        <div class="chart-info-sub"   id="chart-subtitle">Sélectionnez une filiale et un flux</div>
+      </div>
+      <div class="chart-badges" id="chart-badges"></div>
+    </div>
+
+    <!-- KPI Row -->
+    <div class="flux-kpi-row" id="kpi-row" style="display:none;">
+      <div class="flux-kpi">
+        <div class="flux-kpi__val" id="kpi-nb-annees">—</div>
+        <div class="flux-kpi__lbl">Années</div>
+      </div>
+      <div class="flux-kpi">
+        <div class="flux-kpi__val flux-kpi__val--sm" id="kpi-peak-annee">—</div>
+        <div class="flux-kpi__lbl">Année record</div>
+        <div class="flux-kpi__sub" id="kpi-peak-val"></div>
+      </div>
+      <div class="flux-kpi">
+        <div class="flux-kpi__val flux-kpi__val--sm" id="kpi-trough-annee">—</div>
+        <div class="flux-kpi__lbl">Année min</div>
+        <div class="flux-kpi__sub" id="kpi-trough-val"></div>
+      </div>
+      <div class="flux-kpi">
+        <div class="flux-kpi__val flux-kpi__val--sm" id="kpi-nb-points">—</div>
+        <div class="flux-kpi__lbl">Points de données</div>
+      </div>
+    </div>
+
+    <!-- Contenu -->
+    <div class="charts-scroll" id="charts-area">
+
+      <!-- Placeholder initial -->
+      <div class="state-placeholder" id="state-empty">
+        <div class="state-placeholder__icon">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#4C7CF3" stroke-width="1.5">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+          </svg>
+        </div>
+        <div>
+          <strong style="color:#94A3B8;display:block;margin-bottom:4px;">Aucun graphique affiché</strong>
+          Sélectionnez une filiale et un flux dans le panneau de gauche,<br>
+          puis cliquez sur <em>Afficher la superposition</em>.
+        </div>
+      </div>
+
+      <!-- Loading -->
+      <div class="state-loading" id="state-loading" hidden>
+        <div class="spinner"></div>
+        Chargement des données…
+      </div>
+
+      <!-- Erreur -->
+      <div id="state-error" hidden>
+        <div class="state-error">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">
+            <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+            <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+          <span id="error-msg">Erreur inconnue</span>
+        </div>
+      </div>
+
+      <!-- Résultats : 3 chart blocks -->
+      <div id="state-result" hidden>
+
+        <!-- Chart 1 : Hebdomadaire -->
+        <div class="chart-block">
+          <div class="chart-block__header">
+            <div>
+              <div class="chart-block__title">Vue hebdomadaire</div>
+              <div class="chart-block__sub">Agrégation par semaine ISO</div>
+            </div>
+            <div class="chart-block__type-row">
+              <button class="ctype-btn active" data-chart="weekly" data-type="line">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                Ligne
+              </button>
+              <button class="ctype-btn" data-chart="weekly" data-type="bar">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="18" y="3" width="3" height="18" rx="1"/><rect x="10.5" y="8" width="3" height="13" rx="1"/><rect x="3" y="13" width="3" height="8" rx="1"/></svg>
+                Barres
+              </button>
+            </div>
+          </div>
+          <div class="chart-block__canvas-wrap">
+            <canvas id="chart-weekly"></canvas>
+          </div>
+        </div>
+
+        <!-- Chart 2 : Mensuel -->
+        <div class="chart-block">
+          <div class="chart-block__header">
+            <div>
+              <div class="chart-block__title">Vue mensuelle</div>
+              <div class="chart-block__sub">Agrégation par mois</div>
+            </div>
+            <div class="chart-block__type-row">
+              <button class="ctype-btn active" data-chart="monthly" data-type="line">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                Ligne
+              </button>
+              <button class="ctype-btn" data-chart="monthly" data-type="bar">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="18" y="3" width="3" height="18" rx="1"/><rect x="10.5" y="8" width="3" height="13" rx="1"/><rect x="3" y="13" width="3" height="8" rx="1"/></svg>
+                Barres
+              </button>
+            </div>
+          </div>
+          <div class="chart-block__canvas-wrap">
+            <canvas id="chart-monthly"></canvas>
+          </div>
+        </div>
+
+        <!-- Chart 3 : Annuel -->
+        <div class="chart-block">
+          <div class="chart-block__header">
+            <div>
+              <div class="chart-block__title">Vue annuelle</div>
+              <div class="chart-block__sub">Total par année</div>
+            </div>
+            <div class="chart-block__type-row">
+              <button class="ctype-btn" data-chart="annual" data-type="line">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                Ligne
+              </button>
+              <button class="ctype-btn active" data-chart="annual" data-type="bar">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="18" y="3" width="3" height="18" rx="1"/><rect x="10.5" y="8" width="3" height="13" rx="1"/><rect x="3" y="13" width="3" height="8" rx="1"/></svg>
+                Barres
+              </button>
+            </div>
+          </div>
+          <div class="chart-block__canvas-wrap">
+            <canvas id="chart-annual"></canvas>
+          </div>
+        </div>
+
+      </div><!-- /state-result -->
+
+    </div><!-- /charts-scroll -->
+
+  </div><!-- /chart-panel -->
+
+</div><!-- /visu-layout -->
+
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/visualisation_flux.js') }}"></script>
+{% endblock %}

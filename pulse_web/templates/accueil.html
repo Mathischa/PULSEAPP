@@ -1,0 +1,386 @@
+{% extends "base.html" %}
+{% set active_page = "accueil" %}
+{% block title %}Tableau de Bord{% endblock %}
+{% block breadcrumb %}Tableau de Bord{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/accueil.css') }}" />
+{% endblock %}
+
+{% block content %}
+
+<!-- HERO SECTION PREMIUM -->
+<div class="dashboard-hero">
+  <div class="hero-orb hero-orb--1"></div>
+  <div class="hero-orb hero-orb--2"></div>
+  <div class="hero-grid-bg" aria-hidden="true"></div>
+
+  <div class="dashboard-hero__content">
+    <div class="dashboard-hero__eyebrow">
+      <span class="eyebrow-dot"></span>
+      PULSE · DCF Groupe — Supervision opérationnelle
+    </div>
+
+    <h1 class="dashboard-hero__title">Tableau de Bord</h1>
+
+    <p class="dashboard-hero__subtitle">
+      Visibilité temps réel sur les données PULSE en mémoire —
+      fichiers chargés, sections couvertes, état du cache et synchronisation système.
+    </p>
+
+    <div class="dashboard-hero__meta">
+      <div class="hero-stat">
+        <span class="hero-stat__label">Mode</span>
+        <span class="hero-stat__value">Analyse temps réel</span>
+      </div>
+      <div class="hero-stat">
+        <span class="hero-stat__label">Environnement</span>
+        <span class="hero-stat__value">Production</span>
+      </div>
+      <div class="hero-stat">
+        <span class="hero-stat__label">Statut système</span>
+        <span class="hero-stat__value hero-stat__value--ok">
+          <span class="status-dot"></span>
+          Opérationnel
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- HERO PANEL — droite enrichi -->
+  <div class="dashboard-hero__panel">
+    <div class="hero-panel-card">
+      <div class="hero-panel-card__eyebrow">FICHIERS EN MÉMOIRE</div>
+      <div class="hero-panel-card__value" id="hero-total-files">—</div>
+      <div class="hero-panel-card__subtitle">Documents actifs chargés</div>
+
+      <div class="hero-panel-card__divider"></div>
+
+      <div class="hero-panel-stats">
+        <div class="hero-panel-stat">
+          <div class="hero-panel-stat__val" id="hero-stat-annees">—</div>
+          <div class="hero-panel-stat__lbl">Années</div>
+        </div>
+        <div class="hero-panel-stat__sep"></div>
+        <div class="hero-panel-stat">
+          <div class="hero-panel-stat__val" id="hero-stat-sections">—</div>
+          <div class="hero-panel-stat__lbl">Sections</div>
+        </div>
+      </div>
+
+      <div class="hero-panel-card__accent"></div>
+    </div>
+  </div>
+</div>
+
+<!-- LOADING STATE -->
+<div id="loading">
+  <div class="kpi-grid">
+    <div class="skeleton skeleton-kpi"></div>
+    <div class="skeleton skeleton-kpi"></div>
+    <div class="skeleton skeleton-kpi"></div>
+    <div class="skeleton skeleton-kpi"></div>
+  </div>
+  <div class="stats-row" style="margin-top:0; margin-bottom:0;">
+    <div class="skeleton skeleton-stat"></div>
+    <div class="skeleton skeleton-stat"></div>
+    <div class="skeleton skeleton-stat"></div>
+    <div class="skeleton skeleton-stat"></div>
+  </div>
+  <div class="card-grid" style="margin-top:16px;">
+    <div class="skeleton skeleton-card-sm"></div>
+    <div class="skeleton skeleton-card-sm"></div>
+    <div class="skeleton skeleton-table"></div>
+  </div>
+</div>
+
+<!-- MAIN DASHBOARD -->
+<div id="dashboard" hidden>
+
+  <!-- KPI GRID -->
+  <div class="kpi-grid">
+
+    <!-- KPI 1: Fichiers -->
+    <div class="kpi-card kpi-card--blue" data-index="0">
+      <div class="kpi-card__inner">
+        <div class="kpi-card__header">
+          <div class="kpi-icon kpi-icon--blue">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"
+                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M13 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V9z"/>
+              <polyline points="13 2 13 9 20 9"/>
+            </svg>
+          </div>
+          <span class="badge badge--blue badge--sm">Volume</span>
+        </div>
+        <div class="kpi-value" id="kpi-fichiers">—</div>
+        <div class="kpi-label">Fichiers mensuels</div>
+        <div class="kpi-card__glow"></div>
+      </div>
+    </div>
+
+    <!-- KPI 2: MAJ -->
+    <div class="kpi-card kpi-card--green" data-index="1">
+      <div class="kpi-card__inner">
+        <div class="kpi-card__header">
+          <div class="kpi-icon kpi-icon--green">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"
+                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="10"/>
+              <polyline points="12 6 12 12 16 14"/>
+            </svg>
+          </div>
+          <span class="badge badge--green badge--sm">Sync</span>
+        </div>
+        <div class="kpi-value kpi-value--sm" id="kpi-maj">—</div>
+        <div class="kpi-label">Dernière mise à jour</div>
+        <div class="kpi-card__glow"></div>
+      </div>
+    </div>
+
+    <!-- KPI 3: Sections -->
+    <div class="kpi-card kpi-card--purple" data-index="2">
+      <div class="kpi-card__inner">
+        <div class="kpi-card__header">
+          <div class="kpi-icon kpi-icon--purple">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"
+                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <rect x="3" y="3" width="7" height="7"/>
+              <rect x="14" y="3" width="7" height="7"/>
+              <rect x="14" y="14" width="7" height="7"/>
+              <rect x="3" y="14" width="7" height="7"/>
+            </svg>
+          </div>
+          <span class="badge badge--purple badge--sm">Coverage</span>
+        </div>
+        <div class="kpi-value" id="kpi-sections">—</div>
+        <div class="kpi-label">Sections analysées</div>
+        <div class="kpi-card__glow"></div>
+      </div>
+    </div>
+
+    <!-- KPI 4: Cache -->
+    <div class="kpi-card kpi-card--orange" data-index="3">
+      <div class="kpi-card__inner">
+        <div class="kpi-card__header">
+          <div class="kpi-icon kpi-icon--orange">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"
+                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <ellipse cx="12" cy="5" rx="9" ry="3"/>
+              <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/>
+              <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>
+            </svg>
+          </div>
+          <span class="badge badge--gray badge--sm">Cache</span>
+        </div>
+        <div class="kpi-value" id="kpi-cache">—</div>
+        <div class="kpi-label">Séries en cache</div>
+        <div class="kpi-card__glow"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- STATS ROW -->
+  <div class="stats-row">
+    <div class="stat-item stat-item--years" data-index="0">
+      <div class="stat-value" id="stat-annees">—</div>
+      <div class="stat-label">Années disponibles</div>
+    </div>
+    <div class="stat-item stat-item--filiales" data-index="1">
+      <div class="stat-value" id="stat-filiales">—</div>
+      <div class="stat-label">Filiales détectées</div>
+    </div>
+    <div class="stat-item stat-item--recents" data-index="2">
+      <div class="stat-value" id="stat-recents">—</div>
+      <div class="stat-label">Fichiers récents</div>
+    </div>
+    <div class="stat-item stat-item--health" data-index="3">
+      <div class="stat-value stat-value--ok" id="stat-health">—</div>
+      <div class="stat-label">Santé système</div>
+    </div>
+  </div>
+
+  <!-- CONTENT CARDS GRID -->
+  <div class="card-grid" style="margin-top:20px;">
+
+    <!-- CARD 1: Années -->
+    <div class="card card--premium" data-index="0">
+      <div class="card__header">
+        <div>
+          <div class="card__title">Années disponibles</div>
+          <div class="card__subtitle">Période couverte par les données</div>
+        </div>
+        <span id="annees-count" class="badge badge--blue">—</span>
+      </div>
+      <div id="annees-badges" class="badges-wrap"></div>
+    </div>
+
+    <!-- CARD 2: Sections / Filiales -->
+    <div class="card card--premium" data-index="1">
+      <div class="card__header">
+        <div>
+          <div class="card__title">Sections / Filiales</div>
+          <div class="card__subtitle">Périmètre analysé</div>
+        </div>
+        <span id="sections-count" class="badge badge--purple">—</span>
+      </div>
+      <div id="sections-chips" class="chips-wrap chips-wrap--grid"></div>
+    </div>
+
+    <!-- CARD 3: Insights (span 2) -->
+    <div class="card card--premium card--span2" data-index="2">
+      <div class="card__header card__header--large">
+        <div>
+          <div class="card__title">Lecture stratégique</div>
+          <div class="card__subtitle">Indicateurs clés de monitoring</div>
+        </div>
+        <span class="badge badge--purple">Insights</span>
+      </div>
+
+      <div class="insights-grid">
+
+        <div class="insight-box">
+          <div class="insight-box__icon insight-box__icon--blue">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"
+                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+              <line x1="16" y1="2" x2="16" y2="6"/>
+              <line x1="8" y1="2" x2="8" y2="6"/>
+              <line x1="3" y1="10" x2="21" y2="10"/>
+            </svg>
+          </div>
+          <div class="insight-box__label">Dernière activité</div>
+          <div class="insight-box__value" id="insight-last-update">—</div>
+          <div class="insight-box__desc">Dernier point de synchronisation identifié</div>
+        </div>
+
+        <div class="insight-box">
+          <div class="insight-box__icon insight-box__icon--purple">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"
+                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+              <path d="M2 17l10 5 10-5"/>
+              <path d="M2 12l10 5 10-5"/>
+            </svg>
+          </div>
+          <div class="insight-box__label">Périmètre couvert</div>
+          <div class="insight-box__value" id="insight-coverage">—</div>
+          <div class="insight-box__desc">Nombre de sections actuellement analysées</div>
+        </div>
+
+        <div class="insight-box">
+          <div class="insight-box__icon insight-box__icon--green">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"
+                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <ellipse cx="12" cy="5" rx="9" ry="3"/>
+              <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/>
+              <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>
+            </svg>
+          </div>
+          <div class="insight-box__label">Capacité cache</div>
+          <div class="insight-box__value" id="insight-cache">—</div>
+          <div class="insight-box__desc">Séries stockées pour accès rapide</div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- CARD 4: Table Fichiers (span 2) -->
+    <div class="card card--premium card--span2" data-index="3">
+      <div class="card__header card__header--large">
+        <div>
+          <div class="card__title">Fichiers les plus récents</div>
+          <div class="card__subtitle">Documents chargés en mémoire applicative</div>
+        </div>
+        <span id="total-fichiers-label" class="badge badge--gray">—</span>
+      </div>
+
+      <div class="table-toolbar">
+        <div class="table-info">
+          <svg class="table-info__icon-svg" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="2" stroke-linecap="round"
+               stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="8" x2="12" y2="12"/>
+            <line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+          <span>Fichiers chargés et prêts pour l'analyse</span>
+        </div>
+        <div class="table-legend">
+          <div class="legend-item">
+            <span class="dot dot--green"></span>
+            <span>Actif</span>
+          </div>
+          <div class="legend-item">
+            <span class="dot dot--blue"></span>
+            <span>Synchronisé</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table class="mini-table">
+          <thead>
+            <tr>
+              <th class="th-file">Fichier</th>
+              <th class="th-size">Taille</th>
+              <th class="th-date">Modifié le</th>
+              <th class="th-status">État</th>
+            </tr>
+          </thead>
+          <tbody id="fichiers-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- CARD 5: État mémoire -->
+    <div class="card card--premium" data-index="4">
+      <div class="card__header">
+        <div>
+          <div class="card__title">État de la mémoire</div>
+          <div class="card__subtitle">Snapshot système live</div>
+        </div>
+        <span class="badge badge--green">Live</span>
+      </div>
+
+      <div class="system-list">
+        <div class="system-row">
+          <span class="system-row__label">Cache applicatif</span>
+          <span class="system-row__value" id="sys-cache">—</span>
+        </div>
+        <div class="system-row">
+          <span class="system-row__label">Dernière synchronisation</span>
+          <span class="system-row__value" id="sys-sync">—</span>
+        </div>
+        <div class="system-row">
+          <span class="system-row__label">Couverture fonctionnelle</span>
+          <span class="system-row__value" id="sys-sections">—</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- CARD 6: Résumé opérationnel -->
+    <div class="card card--premium" data-index="5">
+      <div class="card__header">
+        <div>
+          <div class="card__title">Résumé opérationnel</div>
+          <div class="card__subtitle">Vue consolidée du dataset</div>
+        </div>
+        <span class="badge badge--blue">Résumé</span>
+      </div>
+
+      <div class="summary-box" id="resume-operationnel">
+        Données en attente de chargement…
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/accueil.js') }}"></script>
+{% endblock %}
