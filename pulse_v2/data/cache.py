@@ -510,10 +510,18 @@ def _accumuler_valeurs_tous_mois(files_list: list[tuple[int, int, str]]) -> None
                 prev_v_lst = B["prev_vals"]
 
                 for k, h in enumerate(prev_h_lst):
-                    if h in header_to_col:
-                        vals = [df.iloc[p, header_to_col[h]] for p in good_positions]
-                        prev_v_lst[k].extend([v if pd.notna(v) else None for v in vals])
-                    else:
+                    try:
+                        if h in header_to_col:
+                            col_idx = header_to_col[h]
+                            if col_idx >= len(df.columns):
+                                prev_v_lst[k].extend([None] * n_batch)
+                            else:
+                                vals = [df.iloc[p, col_idx] for p in good_positions]
+                                prev_v_lst[k].extend([v if pd.notna(v) else None for v in vals])
+                        else:
+                            prev_v_lst[k].extend([None] * n_batch)
+                    except (IndexError, KeyError):
+                        # Gérer les erreurs d'index
                         prev_v_lst[k].extend([None] * n_batch)
 
                 col += 2 + 2 * len(prev_headers) + 1
