@@ -122,6 +122,10 @@ def create_app() -> Flask:
     def page_heatmap_ecarts():
         return render_template("heatmap_ecarts.html")
 
+    @app.route("/import_profils")
+    def page_import_profils():
+        return render_template("import_profils.html")
+
     return app
 
 
