@@ -1,39 +1,57 @@
 /* export_utils.js — Utilitaires d'export PULSE (PDF + Excel) */
 "use strict";
 
-/* ── PDF via impression navigateur ──────────────────────────── */
+/* ── PDF via html2pdf (téléchargement direct) ──────────────────── */
 window.pulsePDF = function (title) {
-  if (title) {
-    const prev = document.title;
-    document.title = title;
+  if (typeof html2pdf === "undefined") {
+    alert("Bibliothèque PDF (html2pdf) non disponible. Essayez l'impression navigateur.");
+    return;
   }
   
-  // Injecter les styles d'impression pour améliorer la qualité
-  const printStyle = document.createElement("style");
-  printStyle.media = "print";
-  printStyle.innerHTML = `
-    @media print {
-      body { background: white; color: black; }
-      canvas { max-height: 100% !important; width: 100% !important; }
-      .chart-container { page-break-inside: avoid; }
-      table { border-collapse: collapse; width: 100%; }
-      th, td { border: 1px solid #333; padding: 8px; text-align: left; }
-      th { background-color: #f0f0f0; font-weight: bold; }
-      h1, h2, h3 { margin-top: 15px; margin-bottom: 10px; }
-      .no-print { display: none !important; }
-      img { max-width: 100%; }
-    }
-  `;
-  document.head.appendChild(printStyle);
+  // Sélectionner l'élément principal à exporter
+  const element = document.querySelector(".main") || document.body;
   
-  window.print();
+  // Options pour html2pdf
+  const options = {
+    margin: [10, 10, 10, 10],           // Marges en mm
+    filename: (title || "export") + ".pdf",
+    image: { type: "jpeg", quality: 0.98 },
+    html2canvas: { scale: 2, useCORS: true, allowTaint: true },
+    jsPDF: { orientation: "portrait", unit: "mm", format: "a4" },
+    pagebreak: { mode: ["avoid-all", "css", "legacy"] }
+  };
   
-  if (title) {
-    document.title = prev;
-  }
+  // Masquer temporairement les éléments non-imprimables
+  const hideElements = [
+    ".header", "#sidebar", ".sidebar", ".sidebar-toggle-btn",
+    "#pulse-splash", ".filters-bar", ".filters-actions",
+    ".page-header-actions", ".export-btn-group", ".ctrl-footer",
+    ".btn--export-pdf", ".btn--export-excel",
+    "#btn-export-pdf", "#btn-export-excel", "#btn-export", "#btn-reset-zoom",
+    ".ctrl-panel"
+  ];
   
-  // Nettoyer le style après l'impression
-  setTimeout(() => document.head.removeChild(printStyle), 100);
+  const hidden = [];
+  hideElements.forEach(selector => {
+    document.querySelectorAll(selector).forEach(el => {
+      if (el.style.display !== "none") {
+        hidden.push({ el, display: el.style.display });
+        el.style.display = "none";
+      }
+    });
+  });
+  
+  // Générer et télécharger le PDF
+  html2pdf()
+    .set(options)
+    .from(element)
+    .save()
+    .finally(() => {
+      // Restaurer les éléments masqués
+      hidden.forEach(({ el, display }) => {
+        el.style.display = display;
+      });
+    });
 };
 
 /* ── Excel depuis un tableau HTML ───────────────────────────── */
