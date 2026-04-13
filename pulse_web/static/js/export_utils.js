@@ -1,27 +1,19 @@
 /* export_utils.js — Utilitaires d'export PULSE (PDF + Excel) */
 "use strict";
 
-/* ── PDF via html2pdf (téléchargement direct) ──────────────────── */
+/* ── PDF via jsPDF + html2canvas (téléchargement direct) ────── */
 window.pulsePDF = function (title) {
-  if (typeof html2pdf === "undefined") {
-    alert("Bibliothèque PDF (html2pdf) non disponible. Essayez l'impression navigateur.");
+  const { jsPDF } = window.jspdf;
+  
+  if (!window.html2canvas || !jsPDF) {
+    alert("Bibliothèques PDF (html2canvas/jsPDF) non disponibles.");
     return;
   }
   
-  // Sélectionner l'élément principal à exporter
+  // Récupérer l'élément principal
   const element = document.querySelector(".main") || document.body;
   
-  // Options pour html2pdf
-  const options = {
-    margin: [10, 10, 10, 10],           // Marges en mm
-    filename: (title || "export") + ".pdf",
-    image: { type: "jpeg", quality: 0.98 },
-    html2canvas: { scale: 2, useCORS: true, allowTaint: true },
-    jsPDF: { orientation: "portrait", unit: "mm", format: "a4" },
-    pagebreak: { mode: ["avoid-all", "css", "legacy"] }
-  };
-  
-  // Masquer temporairement les éléments non-imprimables
+  // Masquer éléments non-imprimables
   const hideElements = [
     ".header", "#sidebar", ".sidebar", ".sidebar-toggle-btn",
     "#pulse-splash", ".filters-bar", ".filters-actions",
@@ -41,17 +33,65 @@ window.pulsePDF = function (title) {
     });
   });
   
-  // Générer et télécharger le PDF
-  html2pdf()
-    .set(options)
-    .from(element)
-    .save()
-    .finally(() => {
-      // Restaurer les éléments masqués
+  // Créer PDF
+  const btn = document.getElementById("btn-export-pdf");
+  if (btn) btn.disabled = true;
+  
+  html2canvas(element, {
+    scale: 2,
+    useCORS: true,
+    allowTaint: false,
+    backgroundColor: "#ffffff"
+  }).then(canvas => {
+    try {
+      const pdf = new jsPDF({
+        orientation: "portrait",
+        unit: "mm",
+        format: "a4"
+      });
+      
+      const imgData = canvas.toDataURL("image/jpeg", 0.95);
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const margin = 10;
+      const imgWidth = pageWidth - (margin * 2);
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      
+      let heightLeft = imgHeight;
+      let position = 0;
+      
+      // Première page
+      pdf.addImage(imgData, "JPEG", margin, margin, imgWidth, imgHeight);
+      heightLeft -= pageHeight - (margin * 2);
+      
+      // Pages suivantes
+      while (heightLeft > 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, "JPEG", margin, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight - (margin * 2);
+      }
+      
+      // Télécharger
+      pdf.save((title || "export") + ".pdf");
+    } catch (e) {
+      console.error("Erreur PDF:", e);
+      alert("Erreur lors de la génération du PDF: " + e.message);
+    } finally {
+      // Restaurer éléments
       hidden.forEach(({ el, display }) => {
         el.style.display = display;
       });
+      if (btn) btn.disabled = false;
+    }
+  }).catch(err => {
+    console.error("Erreur html2canvas:", err);
+    alert("Erreur lors de la capture: " + err.message);
+    hidden.forEach(({ el, display }) => {
+      el.style.display = display;
     });
+    if (btn) btn.disabled = false;
+  });
 };
 
 /* ── Excel depuis un tableau HTML ───────────────────────────── */
