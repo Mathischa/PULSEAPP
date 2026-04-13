@@ -64,6 +64,19 @@ async function loadConfig() {
     anneeSelect.addEventListener('change', updateCharts);
     fluxSelect.addEventListener('change', updateCharts);
 
+    document.getElementById("btn-export-pdf")?.addEventListener("click", () => {
+      window.pulsePDF("Répartition des écarts par profil — PULSE");
+    });
+
+    document.getElementById("btn-export-excel")?.addEventListener("click", () => {
+      const chart = chartRateInstance || chartValueInstance;
+      if (chart) {
+        window.pulseExcelChart(chart, "prevision_repartition");
+      } else {
+        alert("Aucun graphique disponible.");
+      }
+    });
+
     // Initial load
     await updateCharts();
   } catch (error) {
@@ -107,6 +120,8 @@ async function updateCharts() {
 
     renderCharts(data, filiale, annee);
     renderTable(data);
+    const btnExcel = document.getElementById("btn-export-excel");
+    if (btnExcel) btnExcel.disabled = false;
   } catch (error) {
     console.error('Error updating charts:', error);
     document.getElementById('tableBody').innerHTML = `
@@ -177,12 +192,14 @@ function renderCharts(data, filiale, annee) {
       },
       scales: {
         y: {
-          ticks: { color: '#d1d5db' },
-          grid: { color: 'rgba(139, 148, 168, 0.1)' },
+          ticks: { color: "#FFFFFF", font: { weight: "500" } },
+          title: { display: true, text: "Taux d'\u00e9carts (%)", color: "#FFFFFF", font: { size: 11, weight: "500" } },
+          grid: { color: "rgba(139, 148, 168, 0.1)" },
           beginAtZero: true
         },
         x: {
-          ticks: { color: '#d1d5db' },
+          ticks: { color: "#FFFFFF", font: { weight: "500" } },
+          title: { display: true, text: "Profils", color: "#FFFFFF", font: { size: 11, weight: "500" } },
           grid: { display: false }
         }
       }
@@ -246,14 +263,17 @@ function renderCharts(data, filiale, annee) {
       scales: {
         y: {
           ticks: {
-            color: '#d1d5db',
-            callback: (val) => formatNumber(val)
+            color: "#FFFFFF",
+            callback: (val) => formatNumber(val),
+            font: { weight: "500" }
           },
-          grid: { color: 'rgba(139, 148, 168, 0.1)' },
+          title: { display: true, text: "Valorisation (k€)", color: "#FFFFFF", font: { size: 11, weight: "500" } },
+          grid: { color: "rgba(139, 148, 168, 0.1)" },
           beginAtZero: true
         },
         x: {
-          ticks: { color: '#d1d5db' },
+          ticks: { color: "#FFFFFF", font: { weight: "500" } },
+          title: { display: true, text: "Profils", color: "#FFFFFF", font: { size: 11, weight: "500" } },
           grid: { display: false }
         }
       }

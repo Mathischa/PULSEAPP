@@ -139,15 +139,15 @@ function renderScatter(points, clusters) {
       },
       scales: {
         x: {
-          title: { display: true, text: "Écart (%)", color: "#64748B" },
+          title: { display: true, text: "Écart (%)", color: "#FFFFFF", font: { size: 12, weight: "500" } },
           grid: { color: "rgba(255,255,255,.04)" },
-          ticks: { color: "#475569" },
+          ticks: { color: "#FFFFFF", font: { weight: "500" } },
           border: { color: "rgba(255,255,255,.08)" },
         },
         y: {
-          title: { display: true, text: "Valorisation signée (k€)", color: "#64748B" },
+          title: { display: true, text: "Valorisation signée (k€)", color: "#FFFFFF", font: { size: 12, weight: "500" } },
           grid: { color: "rgba(255,255,255,.04)" },
-          ticks: { color: "#475569", callback: v => fmt(v) },
+          ticks: { color: "#FFFFFF", callback: v => fmt(v), font: { weight: "500" } },
           border: { color: "rgba(255,255,255,.08)" },
         },
       },
@@ -189,12 +189,14 @@ function renderBarClusters(clusters) {
       scales: {
         x: {
           grid: { display: false },
-          ticks: { color: "#94A3B8" },
+          ticks: { color: "#FFFFFF", font: { weight: "500" } },
+          title: { display: true, text: "Clusters", color: "#FFFFFF", font: { size: 11, weight: "500" } },
           border: { color: "rgba(255,255,255,.08)" },
         },
         y: {
           grid: { color: "rgba(255,255,255,.04)" },
-          ticks: { color: "#475569", callback: v => v + "%" },
+          ticks: { color: "#FFFFFF", callback: v => v + "%", font: { weight: "500" } },
+          title: { display: true, text: "Pourcentage (%)", color: "#FFFFFF", font: { size: 11, weight: "500" } },
           border: { color: "rgba(255,255,255,.08)" },
           max: Math.ceil(Math.max(...clusters.map(c => c.pct)) * 1.25 / 10) * 10,
         },
@@ -334,12 +336,14 @@ function renderExplain(data) {
       scales: {
         x: {
           grid: { color: "rgba(255,255,255,.04)" },
-          ticks: { color: "#475569", callback: v => fmt2(v) },
+          ticks: { color: "#FFFFFF", callback: v => fmt2(v), font: { weight: "500" } },
+          title: { display: true, text: "Score F", color: "#FFFFFF", font: { size: 11, weight: "500" } },
           border: { color: "rgba(255,255,255,.08)" },
         },
         y: {
           grid: { display: false },
-          ticks: { color: "#94A3B8" },
+          ticks: { color: "#FFFFFF", font: { weight: "500" } },
+          title: { display: true, text: "Flux", color: "#FFFFFF", font: { size: 11, weight: "500" } },
           border: { color: "rgba(255,255,255,.08)" },
         },
       },
@@ -414,6 +418,11 @@ async function lancerAnalyse() {
       renderExplain(data);
       showState("state-explain");
     }
+    const btnExcel = document.getElementById("btn-export-excel");
+    if (btnExcel) {
+      btnExcel.disabled = false;
+      btnExcel._mlData = data;
+    }
   } catch (err) {
     document.getElementById("ml-error-msg").textContent = err.message || "Erreur inconnue";
     showState("state-error");
@@ -423,6 +432,20 @@ async function lancerAnalyse() {
 /* ── INIT ─────────────────────────────────────────────────── */
 (async () => {
   document.getElementById("btn-lancer").addEventListener("click", lancerAnalyse);
+
+  document.getElementById("btn-export-pdf")?.addEventListener("click", () => {
+    window.pulsePDF("Machine Learning — Analyse des écarts — PULSE");
+  });
+
+  document.getElementById("btn-export-excel")?.addEventListener("click", () => {
+    const btnExcel = document.getElementById("btn-export-excel");
+    const chart = _chartScatter || _chartBarCl || _chartExplain;
+    if (chart) {
+      window.pulseExcelChart(chart, "ml_ecarts_analyse");
+    } else {
+      alert("Lancez d'abord une analyse ML.");
+    }
+  });
 
   // Charger catalogue
   try {

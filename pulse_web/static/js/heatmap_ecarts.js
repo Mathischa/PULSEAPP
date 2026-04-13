@@ -80,6 +80,8 @@ function buildLegend(maxVal) {
 function renderHeatmap(data) {
   _data    = data;
   _selCell = null;
+  const btnExcel = document.getElementById("btn-export-excel");
+  if (btnExcel) btnExcel.disabled = false;
 
   const { profils, mois, matrix, max_val, n_ecarts } = data;
 
@@ -243,6 +245,22 @@ async function lancerHeatmap() {
   const btnLancer  = document.getElementById("btn-hm-lancer");
 
   btnLancer.addEventListener("click", lancerHeatmap);
+
+  document.getElementById("btn-export-pdf")?.addEventListener("click", () => {
+    window.pulsePDF("Heatmap des écarts — PULSE");
+  });
+
+  document.getElementById("btn-export-excel")?.addEventListener("click", () => {
+    if (!_data) { alert("Lancez d'abord la heatmap."); return; }
+    const section = selSection?.value || "Section";
+    /* Exporter via le premier graphique disponible */
+    const chart = chartVolume || chartFreq || chartValo;
+    if (chart) {
+      window.pulseExcelChart(chart, `heatmap_ecarts_${section}`);
+    } else {
+      alert("Aucune donnée graphique à exporter.");
+    }
+  });
 
   // Charger le catalogue → { section: [flux_list] }
   try {

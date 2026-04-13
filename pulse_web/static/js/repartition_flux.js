@@ -103,20 +103,21 @@ function makeBarH({ canvasId, labels, values, colors, xlabel, xMin, xMax, refLin
           min: xMin,
           max: xMax,
           grid: { color: "rgba(255,255,255,0.07)" },
-          ticks: { color: UI.muted },
-          title: { display: !!xlabel, text: xlabel, color: UI.muted, font: { size: 11 } },
+          ticks: { color: "#FFFFFF", font: { weight: "500" } },
+          title: { display: !!xlabel, text: xlabel, color: "#FFFFFF", font: { size: 12, weight: "500" } },
         },
         y: {
           grid: { display: false },
           ticks: {
-            color: UI.text,
-            font: { size: 12 },
+            color: "#FFFFFF",
+            font: { size: 12, weight: "500" },
             // Tronquer les labels trop longs
             callback(v) {
               const lbl = this.getLabelForValue(v);
               return lbl.length > 36 ? lbl.slice(0, 34) + "…" : lbl;
             }
-          }
+          },
+          title: { display: true, text: "Catégories", color: "#FFFFFF", font: { size: 11, weight: "500" } }
         }
       },
       ...(refLine != null ? {
@@ -284,6 +285,9 @@ function renderAll(data) {
   renderKPIs(flux);
   renderTable(flux);
 
+  const btnExcel = document.getElementById("btn-export-excel");
+  if (btnExcel) btnExcel.disabled = false;
+
   showState("state-result");
 }
 
@@ -394,6 +398,19 @@ async function loadProfils() {
     });
     document.getElementById("f-profil").addEventListener("change", analyser);
     document.getElementById("btn-analyser").addEventListener("click", analyser);
+
+    document.getElementById("btn-export-pdf")?.addEventListener("click", () => {
+      window.pulsePDF("Répartition des écarts par flux — PULSE");
+    });
+
+    document.getElementById("btn-export-excel")?.addEventListener("click", () => {
+      const chart = chartVolume || chartFreq || chartValo;
+      if (chart) {
+        window.pulseExcelChart(chart, "repartition_flux");
+      } else {
+        alert("Lancez d'abord une analyse.");
+      }
+    });
 
     // Chargement initial des profils + analyse
     await loadProfils();

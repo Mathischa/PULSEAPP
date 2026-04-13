@@ -106,6 +106,24 @@ function render(data) {
 /* ── Mise à jour complète ─────────────────────────────────── */
 function update() { render(sortData(getFiltered())); }
 
+/* ── Export PDF ───────────────────────────────────────────── */
+function exportPDF() {
+  window.pulsePDF("Écarts importants — PULSE");
+}
+
+/* ── Export Excel ─────────────────────────────────────────── */
+function exportExcel() {
+  const filtered = sortData(getFiltered());
+  const headers  = ["Date","Profil","Filiale","Flux","Réel (k€)","Prévision (k€)","Écart (k€)","Écart (%)","Favorable"];
+  const rows = filtered.map((r) => [
+    r.date, r.profil, r.filiale, r.flux,
+    r.reel, r.prevision, r.ecart_k, r.ecart_pct,
+    r.favorable ? "Oui" : "Non",
+  ]);
+  window.pulseExcelData(headers, rows, `ecarts_pulse_${new Date().toISOString().slice(0,10)}`);
+  window.toast(`${filtered.length} lignes exportées en Excel`, "success");
+}
+
 /* ── Export CSV ───────────────────────────────────────────── */
 function exportCSV() {
   const filtered = sortData(getFiltered());
@@ -153,7 +171,9 @@ document.querySelectorAll(".data-table thead th[data-col]").forEach((th) => {
   document.getElementById(id).addEventListener("change", update)
 );
 
-/* ── Export button ────────────────────────────────────────── */
+/* ── Export buttons ───────────────────────────────────────── */
+document.getElementById("btn-export-pdf").addEventListener("click", exportPDF);
+document.getElementById("btn-export-excel").addEventListener("click", exportExcel);
 document.getElementById("btn-export").addEventListener("click", exportCSV);
 
 /* ── Chargement initial ───────────────────────────────────── */
@@ -170,6 +190,8 @@ document.getElementById("btn-export").addEventListener("click", exportCSV);
     loadingEl.hidden       = true;
     containerEl.hidden     = false;
     btnExport.disabled     = false;
+    const btnExcel = document.getElementById("btn-export-excel");
+    if (btnExcel) btnExcel.disabled = false;
 
     initFilters(allData);
 

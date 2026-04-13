@@ -84,6 +84,8 @@ function buildLegend(maxVal) {
 function renderHeatmap(data) {
   _data    = data;
   _selCell = null;
+  const btnExcel = document.getElementById("btn-export-excel");
+  if (btnExcel) btnExcel.disabled = false;
 
   const { profils, flux, matrix, mean_matrix, max_val } = data;
 
@@ -254,6 +256,20 @@ async function lancerHeatmap() {
 /* ── INIT ─────────────────────────────────────────────────── */
 (async () => {
   document.getElementById("btn-hm-lancer").addEventListener("click", lancerHeatmap);
+
+  document.getElementById("btn-export-pdf")?.addEventListener("click", () => {
+    window.pulsePDF("Heatmap des anomalies — PULSE");
+  });
+
+  document.getElementById("btn-export-excel")?.addEventListener("click", () => {
+    if (!_data) { alert("Lancez d'abord la heatmap."); return; }
+    const section  = document.getElementById("hm-section")?.value || "Section";
+    const allProfils = Object.keys(_data);
+    const allFlux    = [...new Set(allProfils.flatMap(p => Object.keys(_data[p] || {})))].sort();
+    const headers    = ["Profil", ...allFlux];
+    const rows = allProfils.map(p => [p, ...allFlux.map(f => _data[p]?.[f] ?? 0)]);
+    window.pulseExcelData(headers, rows, `heatmap_anomalies_${section}`);
+  });
 
   // Charger le catalogue
   try {

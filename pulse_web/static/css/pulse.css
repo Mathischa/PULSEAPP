@@ -2369,3 +2369,111 @@ align-items: center;
   }
 }
 
+/* ================================================================
+   IMPRESSION — PDF via window.print()
+   ================================================================ */
+@media print {
+  /* Masquer les éléments de navigation et d'interface */
+  .header,
+  #sidebar,
+  .sidebar,
+  .sidebar-toggle-btn,
+  #pulse-splash,
+  .filters-bar,
+  .filters-actions,
+  .page-header-actions,
+  .export-btn-group,
+  .ctrl-footer,
+  .btn--export-pdf,
+  .btn--export-excel,
+  #btn-export-pdf,
+  #btn-export-excel,
+  #btn-export,
+  #btn-reset-zoom { display: none !important; }
+
+  /* Réinitialiser la mise en page pour l'impression */
+  body, .app-shell { background: #fff !important; color: #000 !important; }
+
+  .layout { display: block !important; margin-top: 0 !important; }
+
+  .main {
+    margin-left: 0 !important;
+    padding: 16px !important;
+    overflow: visible !important;
+  }
+
+  /* Graphiques : qualité d'impression améliorée */
+  canvas { 
+    max-width: 100% !important; 
+    page-break-inside: avoid;
+    image-rendering: crisp-edges;
+  }
+  
+  .chart-container,
+  .chart-wrap,
+  #chart-wrap {
+    page-break-inside: avoid;
+    background: #fff !important;
+  }
+  
+  /* Améliorer le contraste des graphes Chart.js pour l'impression */
+  canvas {
+    filter: contrast(1.2) brightness(1.1);
+  }
+
+  /* Tableaux */
+  .table-wrap, .data-table { 
+    overflow: visible !important; 
+    page-break-inside: avoid;
+  }
+  .data-table { 
+    font-size: 11px; 
+    border-collapse: collapse;
+  }
+  .data-table th,
+  .data-table td {
+    border: 1px solid #333 !important;
+    padding: 8px !important;
+  }
+  .data-table th {
+    background-color: #e0e0e0 !important;
+    color: #000 !important;
+    font-weight: bold;
+  }
+
+  /* Heatmap layout */
+  .hm-layout { padding: 0 !important; }
+
+  /* Visu layout */
+  .visu-layout, .ml-layout {
+    grid-template-columns: 1fr !important;
+  }
+  .ctrl-panel { display: none !important; }
+
+  /* Page header */
+  .page-header {
+    padding: 8px 0 !important;
+    background: none !important;
+    border-bottom: 1px solid #333 !important;
+  }
+  .page-header-text h1 { 
+    font-size: 20px !important; 
+    color: #000 !important;
+    page-break-after: avoid;
+  }
+  .page-header-text .subtitle { 
+    color: #444 !important;
+    page-break-after: avoid;
+  }
+  
+  /* Titres des graphes */
+  .chart-title {
+    color: #000 !important;
+    font-weight: bold;
+  }
+  .chart-subtitle {
+    color: #555 !important;
+  }
+}
+
+

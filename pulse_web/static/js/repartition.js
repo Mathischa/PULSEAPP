@@ -54,6 +54,13 @@ async function updateData() {
     renderCharts(data);
     renderTable(data);
     showResult();
+
+    /* Activer export Excel */
+    const btnExcel = document.getElementById("btn-export-excel");
+    if (btnExcel) {
+      btnExcel.disabled = false;
+      btnExcel._repartData = data;
+    }
   } catch (error) {
     console.error('Error loading data:', error);
     document.getElementById('state-result').innerHTML = `
@@ -180,12 +187,14 @@ function renderBarChart(data) {
       scales: {
         x: {
           stacked: true,
-          ticks: { color: '#d1d5db' },
+          ticks: { color: "#FFFFFF", font: { weight: "500" } },
+          title: { display: true, text: "Filiales", color: "#FFFFFF", font: { size: 11, weight: "500" } },
           grid: { display: false }
         },
         y: {
           stacked: true,
-          ticks: { color: '#d1d5db' },
+          ticks: { color: "#FFFFFF", font: { weight: "500" } },
+          title: { display: true, text: "Nombre d'\u00e9carts", color: "#FFFFFF", font: { size: 11, weight: "500" } },
           grid: { color: 'rgba(139, 148, 168, 0.1)' },
           beginAtZero: true
         }
@@ -326,6 +335,31 @@ document.addEventListener('DOMContentLoaded', () => {
   // Listeners
   document.getElementById('f-annee').addEventListener('change', updateData);
   document.getElementById('btn-analyser').addEventListener('click', updateData);
+
+  // Export PDF
+  document.getElementById("btn-export-pdf")?.addEventListener("click", () => {
+    window.pulsePDF("Répartition par filiale — PULSE");
+  });
+
+  // Export Excel
+  document.getElementById("btn-export-excel")?.addEventListener("click", () => {
+    const btnExcel = document.getElementById("btn-export-excel");
+    if (chartBarInstance) {
+      window.pulseExcelChart(chartBarInstance, "repartition_filiale");
+    } else if (btnExcel?._repartData) {
+      const d = btnExcel._repartData;
+      const headers = ["Section", "Favorables", "Défavorables", "Total"];
+      const rows = (d.sections || []).map((s, i) => [
+        s,
+        d.favorables?.[i] ?? 0,
+        d.defavorables?.[i] ?? 0,
+        (d.favorables?.[i] ?? 0) + (d.defavorables?.[i] ?? 0),
+      ]);
+      window.pulseExcelData(headers, rows, "repartition_filiale");
+    } else {
+      alert("Aucune donnée à exporter.");
+    }
+  });
 
   // Initial load
   updateData();

@@ -143,7 +143,7 @@ function setAllYears(annees, active) {
 /* =========================================================
    CHART.JS DEFAULTS
    ========================================================= */
-Chart.defaults.color           = "#475569";
+Chart.defaults.color           = "#FFFFFF";
 Chart.defaults.borderColor     = "rgba(255,255,255,.07)";
 Chart.defaults.font.family     = "Inter, system-ui, sans-serif";
 
@@ -172,11 +172,13 @@ function commonOptions(ticksCallback) {
     scales: {
       x: {
         grid: { color: "rgba(255,255,255,.05)" },
-        ticks: { color: "#475569", font: { size: 10 }, callback: ticksCallback }
+        ticks: { color: "#FFFFFF", font: { size: 10, weight: "500" }, callback: ticksCallback },
+        title: { display: true, text: "Période", color: "#FFFFFF", font: { size: 11, weight: "500" } }
       },
       y: {
         grid: { color: "rgba(255,255,255,.05)" },
-        ticks: { color: "#475569", font: { size: 10 }, callback: v => formatNum(v) }
+        ticks: { color: "#FFFFFF", font: { size: 10, weight: "500" }, callback: v => formatNum(v) },
+        title: { display: true, text: "Montant (k€)", color: "#FFFFFF", font: { size: 11, weight: "500" } }
       }
     }
   };
@@ -399,6 +401,9 @@ async function fetchAndRender() {
     showState("state-result");
     renderCharts();
 
+    const btnExcel = document.getElementById("btn-export-excel");
+    if (btnExcel) btnExcel.disabled = false;
+
   } catch (err) {
     qs("error-msg").textContent = err.message || "Erreur inconnue";
     showState("state-error");
@@ -445,6 +450,21 @@ qs("f-flux").addEventListener("change", () => {
 });
 
 qs("btn-afficher").addEventListener("click", fetchAndRender);
+
+document.getElementById("btn-export-pdf")?.addEventListener("click", () => {
+  window.pulsePDF("Superposition multi-années — PULSE");
+});
+
+document.getElementById("btn-export-excel")?.addEventListener("click", () => {
+  const chart = charts.monthly || charts.weekly || charts.annual;
+  if (chart) {
+    const section = qs("f-section")?.value || "Section";
+    const flux    = qs("f-flux")?.value    || "Flux";
+    window.pulseExcelChart(chart, `superposition_${section}_${flux}`);
+  } else {
+    alert("Affichez d'abord un graphique.");
+  }
+});
 
 qs("btn-year-all").addEventListener("click", () => {
   if (currentData) setAllYears(currentData.annees, true);

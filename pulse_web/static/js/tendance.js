@@ -118,6 +118,32 @@ async function loadCatalogue() {
   selSection.addEventListener("change", onSectionChange);
   document.getElementById("f-flux").addEventListener("change", checkReady);
   document.getElementById("btn-analyser").addEventListener("click", analyser);
+
+  /* Export PDF */
+  document.getElementById("btn-export-pdf")?.addEventListener("click", () => {
+    window.pulsePDF("Tendance flux — PULSE");
+  });
+
+  /* Export Excel : exporte les données de la première série (dates + réels) */
+  document.getElementById("btn-export-excel")?.addEventListener("click", () => {
+    const btnExcel = document.getElementById("btn-export-excel");
+    const body = btnExcel?._tendanceBody;
+    if (!body) { alert("Lancez d'abord une analyse."); return; }
+
+    const section = document.getElementById("f-section")?.value || "Section";
+    const flux    = document.getElementById("f-flux")?.value    || "Flux";
+
+    /* Utiliser le premier graphique de chartRegistry si disponible */
+    if (chartRegistry.length > 0) {
+      window.pulseExcelChart(chartRegistry[0], `tendance_${section}_${flux}`);
+    } else if (body.dates && body.reel) {
+      const headers = ["Date", "Réel"];
+      const rows = body.dates.map((d, i) => [d, body.reel[i] ?? ""]);
+      window.pulseExcelData(headers, rows, `tendance_${section}_${flux}`);
+    } else {
+      alert("Aucune donnée à exporter.");
+    }
+  });
 }
 
 function onSectionChange() {
@@ -315,14 +341,17 @@ function baseCartesianOptions() {
     scales: {
       x: {
         grid: { color: "#1A1F2E" },
-        ticks: { color: "#8896B0" },
+        ticks: { color: "#FFFFFF", font: { weight: "500" } },
+        title: { display: true, text: "Date", color: "#FFFFFF", font: { size: 11, weight: "500" } },
       },
       y: {
         grid: { color: "#1A1F2E" },
         ticks: {
-          color: "#8896B0",
+          color: "#FFFFFF",
           callback: (v) => fmt(v, 0),
+          font: { weight: "500" },
         },
+        title: { display: true, text: "Montant (k€)", color: "#FFFFFF", font: { size: 11, weight: "500" } },
       },
     },
   };
@@ -1141,6 +1170,13 @@ async function analyser() {
 
     buildFullAnalysis(body);
     showState("state-result");
+
+    /* Activer export Excel */
+    const btnExcel = document.getElementById("btn-export-excel");
+    if (btnExcel) {
+      btnExcel.disabled = false;
+      btnExcel._tendanceBody = body;
+    }
   } catch (err) {
     destroyCharts();
     const errorMsg = document.getElementById("error-msg");

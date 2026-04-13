@@ -289,12 +289,14 @@ function renderLine(dates, reel, profils) {
       scales: {
         x: {
           grid: { color: "rgba(255,255,255,0.04)", drawTicks: false },
-          ticks: { color: "#475569", maxRotation: 40, padding: 6 },
+          ticks: { color: "#FFFFFF", maxRotation: 40, padding: 6, font: { weight: "500" } },
+          title: { display: true, text: "Date", color: "#FFFFFF", font: { size: 12, weight: "500" } },
           border: { color: "rgba(255,255,255,.08)" },
         },
         y: {
           grid: { color: "rgba(255,255,255,0.04)", drawTicks: false },
-          ticks: { color: "#475569", padding: 10, callback: v => fmt(v) },
+          ticks: { color: "#FFFFFF", padding: 10, callback: v => fmt(v), font: { weight: "500" } },
+          title: { display: true, text: "Montant (k€)", color: "#FFFFFF", font: { size: 12, weight: "500" } },
           border: { color: "rgba(255,255,255,.08)" },
         },
       },
@@ -417,12 +419,14 @@ function renderBar(dates, reel, profils) {
       scales: {
         x: {
           grid: { color: "rgba(255,255,255,0.04)", drawTicks: false },
-          ticks: { color: "#475569", maxRotation: 40, padding: 6 },
+          ticks: { color: "#FFFFFF", maxRotation: 40, padding: 6, font: { weight: "500" } },
+          title: { display: true, text: "Date", color: "#FFFFFF", font: { size: 12, weight: "500" } },
           border: { color: "rgba(255,255,255,.08)" },
         },
         y: {
           grid: { color: "rgba(255,255,255,0.04)", drawTicks: false },
-          ticks: { color: "#475569", padding: 10, callback: v => fmt(v) },
+          ticks: { color: "#FFFFFF", padding: 10, callback: v => fmt(v), font: { weight: "500" } },
+          title: { display: true, text: "Montant (k€)", color: "#FFFFFF", font: { size: 12, weight: "500" } },
           border: { color: "rgba(255,255,255,.08)" },
         },
       },
@@ -473,6 +477,8 @@ async function fetchAndRender() {
     _data = body;
     buildProfilsList(body.profils);   // profils décochés par défaut
     render(body);
+    const btnExcel = document.getElementById("btn-export-excel");
+    if (btnExcel) btnExcel.disabled = false;
   } catch (err) {
     if (_chart) { try { _chart.destroy(); } catch (_) {} _chart = null; }
     document.getElementById("error-msg").textContent = err.message || "Erreur inconnue";
@@ -529,6 +535,22 @@ async function onFluxChange() {
   document.getElementById("btn-afficher").addEventListener("click",  fetchAndRender);
   document.getElementById("btn-sel-all" ).addEventListener("click",  () => setAllProfils(true));
   document.getElementById("btn-sel-none").addEventListener("click",  () => setAllProfils(false));
+
+  /* Export PDF */
+  document.getElementById("btn-export-pdf")?.addEventListener("click", () => {
+    window.pulsePDF("Visualisation graphique — PULSE");
+  });
+
+  /* Export Excel */
+  document.getElementById("btn-export-excel")?.addEventListener("click", () => {
+    if (_chart) {
+      const section = document.getElementById("f-section")?.value || "Section";
+      const flux    = document.getElementById("f-flux")?.value    || "Flux";
+      window.pulseExcelChart(_chart, `visualisation_${section}_${flux}`);
+    } else {
+      alert("Affichez d'abord un graphique avant d'exporter.");
+    }
+  });
 
   try {
     const res = await fetch("/api/catalogue");
