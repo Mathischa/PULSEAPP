@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% set active_page = "benchmarking" %}
+{% block title %}Benchmarking Comparatif{% endblock %}
+{% block breadcrumb %}Analyse · Benchmarking comparatif{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+  <div class="page-header-text">
+    <h1>Benchmarking Comparatif</h1>
+    <p class="subtitle">Matrice réel vs prévision et performance relative des filiales</p>
+  </div>
+  <div class="page-header-actions">
+    <button class="btn btn--secondary btn--sm" id="btn-export-pdf">📄 PDF</button>
+    <button class="btn btn--secondary btn--sm" id="btn-export-excel" disabled>📊 Excel</button>
+  </div>
+</div>
+
+<!-- Filtres -->
+<div class="filters-bar">
+  <div class="filter-group">
+    <label class="filter-label">Année</label>
+    <select class="filter-select" id="f-annee"><option value="">Toutes</option></select>
+  </div>
+  <div class="filter-group">
+    <label class="filter-label">Filiale</label>
+    <select class="filter-select" id="f-filiale"><option value="">Toutes</option></select>
+  </div>
+  <div class="filter-group">
+    <label class="filter-label">Type de flux</label>
+    <select class="filter-select" id="f-flux-type">
+      <option value="">Tous</option>
+      <option value="recettes">Recettes</option>
+      <option value="depenses">Dépenses</option>
+      <option value="investissements">Investissements</option>
+    </select>
+  </div>
+</div>
+
+<!-- Loading -->
+<div id="loading" class="loading-state">
+  <div class="spinner"></div>
+  Analyse en cours…
+</div>
+
+<!-- Charts Container -->
+<div id="charts-container" hidden>
+
+  <!-- Scatter Plot: Réel vs Prévision -->
+  <div class="chart-card">
+    <div class="chart-header">
+      <h2>Matrice Réel × Prévision</h2>
+      <p class="chart-subtitle">Identification des biais systématiques et qualité prédictive par filiale</p>
+    </div>
+    <div class="chart-wrapper">
+      <canvas id="scatter-chart" style="position:relative;height:500px;"></canvas>
+    </div>
+    <div class="chart-legend">
+      <div class="legend-item"><span class="dot" style="background:#3B82F6;"></span> ACE A</div>
+      <div class="legend-item"><span class="dot" style="background:#10B981;"></span> ACE B</div>
+      <div class="legend-item"><span class="dot" style="background:#F59E0B;"></span> ACE C</div>
+      <div class="legend-item"><span class="dot" style="background:#EF4444;"></span> ACE D</div>
+      <div class="legend-item"><span class="dot" style="background:#8B5CF6;"></span> Autres</div>
+      <div style="flex:1;"></div>
+      <span class="legend-note">Taille = magnitude écart | Ligne = régression</span>
+    </div>
+  </div>
+
+  <!-- Radar: Performance Filiales -->
+  <div class="chart-card">
+    <div class="chart-header">
+      <h2>Performance Relative des Filiales</h2>
+      <p class="chart-subtitle">Vue 360° : Précision, Volatilité, Favorabilité, Stabilité</p>
+    </div>
+    <div class="chart-wrapper">
+      <canvas id="radar-chart" style="position:relative;height:500px;"></canvas>
+    </div>
+    <div class="chart-info">
+      <table class="perf-table">
+        <thead>
+          <tr>
+            <th>Filiale</th>
+            <th>Précision (%)</th>
+            <th>Volatilité</th>
+            <th>Favorabilité (%)</th>
+            <th>Stabilité</th>
+          </tr>
+        </thead>
+        <tbody id="perf-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+<script src="{{ url_for('static', filename='js/benchmarking.js') }}"></script>
+{% endblock %}

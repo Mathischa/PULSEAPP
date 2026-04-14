@@ -73,9 +73,10 @@ def create_app() -> Flask:
     from api.ml_ecarts import bp as bp_ml_ecarts
     from api.heatmap   import bp as bp_heatmap
     from api.heatmap_ecarts import bp as bp_heatmap_ecarts
+    from api.benchmarking import bp as bp_benchmarking
     from api.import_profils import bp as bp_import_profils
 
-    for bp in (bp_accueil, bp_ecarts, bp_catalogue, bp_tendance, bp_repartition, bp_repartition_flux, bp_visualisation, bp_visualisation_flux, bp_prevision_repartition, bp_ml_ecarts, bp_heatmap, bp_heatmap_ecarts, bp_import_profils):
+    for bp in (bp_accueil, bp_ecarts, bp_catalogue, bp_tendance, bp_repartition, bp_repartition_flux, bp_visualisation, bp_visualisation_flux, bp_prevision_repartition, bp_ml_ecarts, bp_heatmap, bp_heatmap_ecarts, bp_benchmarking, bp_import_profils):
         app.register_blueprint(bp)
 
     @app.route("/")
@@ -126,6 +127,24 @@ def create_app() -> Flask:
     @app.route("/import_profils")
     def page_import_profils():
         return render_template("import_profils.html")
+
+    @app.route("/benchmarking")
+    def page_benchmarking():
+        return render_template("benchmarking.html")
+
+    @app.route("/api/import_profils/browse_folder", methods=["POST"])
+    def api_browse_folder():
+        """Retourne le chemin par défaut pour parcourir les fichiers profils."""
+        print("[DEBUG] browse_folder endpoint called!", flush=True)
+        from pulse_v2.config import BASE_DONNEES_DIR
+        try:
+            if BASE_DONNEES_DIR and os.path.isdir(BASE_DONNEES_DIR):
+                return jsonify({"folder": BASE_DONNEES_DIR})
+            else:
+                return jsonify({"folder": None})
+        except Exception as e:
+            print(f"[ERROR] browse_folder: {e}")
+            return jsonify({"folder": None, "error": str(e)})
 
     return app
 

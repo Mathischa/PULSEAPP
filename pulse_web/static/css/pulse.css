@@ -2477,3 +2477,101 @@ align-items: center;
 }
 
 
+
+
+/* ================================================================
+   BENCHMARKING PAGE STYLES
+   ================================================================ */
+.chart-card {
+  background: rgba(16, 24, 39, 0.8);
+  border: 1px solid rgba(76, 124, 243, 0.15);
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+
+.chart-header {
+  margin-bottom: 20px;
+}
+
+.chart-header h2 {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0 0 8px 0;
+}
+
+.chart-subtitle {
+  font-size: 13px;
+  color: var(--text-2);
+  margin: 0;
+}
+
+.chart-wrapper {
+  position: relative;
+  width: 100%;
+  height: 500px;
+  margin-bottom: 16px;
+}
+
+.chart-legend {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 12px 0;
+  border-top: 1px solid rgba(76, 124, 243, 0.1);
+  font-size: 12px;
+  color: var(--text-2);
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.legend-note {
+  font-size: 11px;
+  color: var(--text-3);
+  opacity: 0.7;
+}
+
+.chart-info {
+  margin-top: 20px;
+}
+
+.perf-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.perf-table thead {
+  background: rgba(76, 124, 243, 0.08);
+}
+
+.perf-table th {
+  padding: 12px 8px;
+  text-align: left;
+  font-weight: 600;
+  color: var(--text-2);
+  border-bottom: 1px solid rgba(76, 124, 243, 0.15);
+}
+
+.perf-table td {
+  padding: 10px 8px;
+  border-bottom: 1px solid rgba(76, 124, 243, 0.1);
+  color: var(--text);
+}
+
+.perf-table tbody tr:hover {
+  background: rgba(76, 124, 243, 0.05);
+}
