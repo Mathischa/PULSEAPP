@@ -72,8 +72,20 @@ window.pulsePDF = function (title) {
         heightLeft -= pageHeight - (margin * 2);
       }
       
-      // Télécharger
-      pdf.save((title || "export") + ".pdf");
+      // Télécharger via blob (plus fiable que pdf.save())
+      const filename = (title || "export") + ".pdf";
+      const pdfBlob = pdf.output("blob");
+      const url = URL.createObjectURL(pdfBlob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = filename;
+      link.style.display = "none";
+      document.body.appendChild(link);
+      link.click();
+      setTimeout(() => {
+        URL.revokeObjectURL(url);
+        document.body.removeChild(link);
+      }, 100);
     } catch (e) {
       console.error("Erreur PDF:", e);
       alert("Erreur lors de la génération du PDF: " + e.message);
