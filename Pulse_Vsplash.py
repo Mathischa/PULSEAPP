@@ -12125,9 +12125,10 @@ class Application(tk.Tk):
         charts_stack = ctk.CTkFrame(page, fg_color="transparent")
         charts_stack.grid(row=2, column=0, sticky="ew", padx=28, pady=(0, 14))
         charts_stack.grid_columnconfigure(0, weight=1)
+        charts_stack.grid_columnconfigure(1, weight=1)
 
         pie_card = card(charts_stack, fg=C["surface"], radius=20)
-        pie_card.grid(row=0, column=0, sticky="ew", pady=(0, 14))
+        pie_card.grid(row=0, column=0, sticky="ew", padx=(0, 8), pady=(0, 14))
         pie_card.grid_columnconfigure(0, weight=1)
 
         section_header(
@@ -12147,7 +12148,7 @@ class Application(tk.Tk):
         pie_body.grid_columnconfigure(0, weight=1)
 
         freq_card = card(charts_stack, fg=C["surface"], radius=20)
-        freq_card.grid(row=1, column=0, sticky="ew", pady=(0, 14))
+        freq_card.grid(row=0, column=1, sticky="ew", padx=(8, 0), pady=(0, 14))
         freq_card.grid_columnconfigure(0, weight=1)
 
         section_header(
@@ -12159,7 +12160,7 @@ class Application(tk.Tk):
 
         freq_body = ctk.CTkFrame(
             freq_card, fg_color=C["surface_2"], corner_radius=14,
-            border_width=1, border_color=C["border_soft"], height=460
+            border_width=1, border_color=C["border_soft"], height=520
         )
         freq_body.grid(row=1, column=0, sticky="ew", padx=18, pady=(0, 18))
         freq_body.grid_propagate(False)
@@ -12167,7 +12168,7 @@ class Application(tk.Tk):
         freq_body.grid_columnconfigure(0, weight=1)
 
         ratio_card = card(charts_stack, fg=C["surface"], radius=20)
-        ratio_card.grid(row=2, column=0, sticky="ew", pady=(0, 14))
+        ratio_card.grid(row=1, column=0, columnspan=2, sticky="ew", pady=(0, 14))
         ratio_card.grid_columnconfigure(0, weight=1)
 
         section_header(
