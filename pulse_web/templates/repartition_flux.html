@@ -5,6 +5,99 @@
 
 {% block head %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<style>
+/* ── LAYOUT ─────────────────────────────────────────────── */
+.visu-layout {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 0;
+  align-items: stretch;
+  min-height: calc(100vh - 160px);
+}
+@media (max-width: 1024px) {
+  .visu-layout { grid-template-columns: 1fr; }
+}
+
+/* ── PANNEAU GAUCHE ──────────────────────────────────────── */
+.ctrl-panel {
+  background: #0e1420;
+  border-right: 1px solid rgba(255,255,255,.07);
+  border-radius: 16px 0 0 16px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: sticky;
+  top: 0;
+  max-height: calc(100vh - 100px);
+}
+.ctrl-header {
+  padding: 20px 20px 16px;
+  border-bottom: 1px solid rgba(255,255,255,.07);
+  background: rgba(76,124,243,.06);
+  flex-shrink: 0;
+}
+.ctrl-header-title { font-size: 13px; font-weight: 700; color: #F3F4F6; letter-spacing: .02em; }
+.ctrl-header-sub   { font-size: 11px; color: #64748B; margin-top: 3px; }
+.ctrl-body {
+  flex: 1;
+  padding: 18px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  overflow-y: auto;
+}
+.ctrl-group { display: flex; flex-direction: column; gap: 6px; }
+.ctrl-label {
+  font-size: 10px; font-weight: 700; color: #4C7CF3;
+  text-transform: uppercase; letter-spacing: .08em;
+}
+.ctrl-sep { height: 1px; background: rgba(255,255,255,.07); margin: 2px 0; }
+.ctrl-footer { padding: 14px 16px; border-top: 1px solid rgba(255,255,255,.07); flex-shrink: 0; }
+
+/* ── PANNEAU DROIT ───────────────────────────────────────── */
+.chart-panel {
+  background: #0a0e18;
+  border-radius: 0 16px 16px 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-width: 0;
+}
+.chart-topbar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 18px 24px 16px;
+  border-bottom: 1px solid rgba(255,255,255,.06);
+  background: rgba(255,255,255,.02);
+  flex-shrink: 0;
+}
+.chart-info-title { font-size: 16px; font-weight: 700; color: #F3F4F6; }
+.chart-info-sub   { font-size: 12px; color: #64748B; margin-top: 3px; }
+.charts-scroll {
+  flex: 1; overflow-y: auto; padding: 20px 24px 28px;
+  display: flex; flex-direction: column; gap: 16px;
+}
+.state-placeholder {
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 16px; color: #475569; font-size: 13px;
+  text-align: center; line-height: 1.6; padding: 48px 24px;
+}
+.state-placeholder__icon {
+  width: 72px; height: 72px; border-radius: 18px;
+  background: rgba(76,124,243,.08); border: 1px solid rgba(76,124,243,.2);
+  display: flex; align-items: center; justify-content: center;
+}
+.state-loading-inner {
+  display: flex; align-items: center; justify-content: center;
+  gap: 14px; color: #64748B; font-size: 13px; padding: 48px 24px;
+}
+.state-error-inner {
+  display: flex; align-items: flex-start; gap: 12px;
+  background: rgba(192,57,43,.12); border: 1px solid rgba(192,57,43,.3);
+  border-radius: 12px; padding: 16px 18px; color: #F87171; font-size: 13px;
+}
+</style>
 {% endblock %}
 
 {% block content %}
@@ -12,119 +105,183 @@
 <div class="page-header">
   <div class="page-header-text">
     <h1>Répartition des écarts par flux</h1>
-    <p class="subtitle">
-      Volume d'écarts, fréquence et valorisation signée par flux — avec filtres filiale, année et profil.
-    </p>
+    <p class="subtitle">Volume d'écarts, fréquence et valorisation signée par flux.</p>
+  </div>
+  <div class="page-header-actions">
+    <button class="btn btn--secondary btn--sm" id="btn-export-pdf">📄 PDF</button>
+    <button class="btn btn--secondary btn--sm" id="btn-export-excel" disabled>📊 Excel</button>
   </div>
 </div>
 
-<!-- Filtres -->
-<div class="filters-bar">
-  <div class="filter-group">
-    <label class="filter-label" for="f-section">Filiale / Section</label>
-    <select class="filter-select" id="f-section" style="min-width:200px;">
-      <option value="">Toute filiale</option>
-    </select>
-  </div>
+<div class="visu-layout">
 
-  <div class="filter-group">
-    <label class="filter-label" for="f-annee">Année</label>
-    <select class="filter-select" id="f-annee" style="min-width:140px;">
-      <option value="">Toutes</option>
-    </select>
-  </div>
+  <!-- ══════════════════════════════════════════
+       PANNEAU DE CONTRÔLE
+  ══════════════════════════════════════════ -->
+  <div class="ctrl-panel">
 
-  <div class="filter-group">
-    <label class="filter-label" for="f-profil">Profil <span style="font-size:11px;opacity:.6;">(valorisation uniquement)</span></label>
-    <select class="filter-select" id="f-profil" style="min-width:220px;">
-      <option value="">Tous profils</option>
-    </select>
-  </div>
+    <div class="ctrl-header">
+      <div class="ctrl-header-title">Paramètres</div>
+      <div class="ctrl-header-sub">Filiale · Année · Profil</div>
+    </div>
 
-  <div class="filters-actions">
-    <button class="btn btn--primary" id="btn-analyser">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-        <circle cx="11" cy="11" r="8"></circle>
-        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-      </svg>
-      Analyser
-    </button>
-  </div>
-</div>
+    <div class="ctrl-body">
 
-<!-- Loading -->
-<div id="state-loading" class="loading-state" hidden>
-  <div class="spinner"></div>
-  Agrégation des écarts par flux…
-</div>
+      <!-- Filiale / Section -->
+      <div class="ctrl-group">
+        <div class="ctrl-label">Filiale / Section</div>
+        <select class="filter-select" id="f-section" style="width:100%;">
+          <option value="">Toute filiale</option>
+        </select>
+      </div>
 
-<!-- Erreur -->
-<div id="state-error" class="error-state" hidden>
-  ⚠ <span id="error-msg">Erreur inconnue</span>
-</div>
+      <!-- Année -->
+      <div class="ctrl-group">
+        <div class="ctrl-label">Année</div>
+        <select class="filter-select" id="f-annee" style="width:100%;">
+          <option value="">Toutes</option>
+        </select>
+      </div>
 
-<!-- Résultat -->
-<div id="state-result" hidden>
+      <div class="ctrl-sep"></div>
 
-  <!-- KPIs -->
-  <div class="kpi-grid" style="grid-template-columns:repeat(auto-fit,minmax(160px,1fr));margin-bottom:16px;" id="kpi-row"></div>
+      <!-- Profil -->
+      <div class="ctrl-group">
+        <div class="ctrl-label">Profil <span style="font-size:10px;opacity:.6;">(valorisation uniquement)</span></div>
+        <select class="filter-select" id="f-profil" style="width:100%;">
+          <option value="">Tous profils</option>
+        </select>
+      </div>
 
-  <!-- Chart 1 : Volume -->
-  <div class="chart-container">
-    <div class="chart-header">
+    </div><!-- /ctrl-body -->
+
+    <div class="ctrl-footer">
+      <button class="btn btn--primary" id="btn-analyser" style="width:100%;justify-content:center;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+        Analyser
+      </button>
+    </div>
+
+  </div><!-- /ctrl-panel -->
+
+  <!-- ══════════════════════════════════════════
+       ZONE RÉSULTATS
+  ══════════════════════════════════════════ -->
+  <div class="chart-panel">
+
+    <div class="chart-topbar">
       <div>
-        <div class="chart-title">Nombre d'écarts importants par flux</div>
-        <div class="chart-subtitle">Volume d'écarts ≥ 40 % détectés pour chaque flux</div>
+        <div class="chart-info-title">Répartition par flux</div>
+        <div class="chart-info-sub">Volume · Fréquence · Valorisation signée</div>
       </div>
     </div>
-    <div class="chart-canvas-wrap" id="wrap-chart1" style="height:420px;">
-      <canvas id="chart-volume"></canvas>
-    </div>
-  </div>
 
-  <!-- Chart 2 : Fréquence -->
-  <div class="chart-container">
-    <div class="chart-header">
-      <div>
-        <div class="chart-title">Pourcentage d'écarts par flux</div>
-        <div class="chart-subtitle">Rapport entre écarts significatifs et prévisions non vides</div>
+    <div class="charts-scroll">
+
+      <!-- État initial -->
+      <div id="state-idle" class="state-placeholder">
+        <div class="state-placeholder__icon">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#4C7CF3" stroke-width="1.5">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+        </div>
+        <div>
+          <strong style="color:#94A3B8;display:block;margin-bottom:4px;">Aucune analyse lancée</strong>
+          Configurez vos filtres et cliquez sur <em>Analyser</em>.
+        </div>
       </div>
-    </div>
-    <div class="chart-canvas-wrap" id="wrap-chart2" style="height:420px;">
-      <canvas id="chart-freq"></canvas>
-    </div>
-  </div>
 
-  <!-- Chart 3 : Valorisation -->
-  <div class="chart-container">
-    <div class="chart-header">
-      <div>
-        <div class="chart-title">Valorisation signée des écarts</div>
-        <div class="chart-subtitle">Montant cumulé signé des écarts (k€) — filtrable par profil</div>
+      <!-- Loading -->
+      <div id="state-loading" hidden>
+        <div class="state-loading-inner">
+          <div class="spinner"></div>
+          Agrégation des écarts par flux…
+        </div>
       </div>
-    </div>
-    <div class="chart-canvas-wrap" id="wrap-chart3" style="height:420px;">
-      <canvas id="chart-valo"></canvas>
-    </div>
-  </div>
 
-  <!-- Tableau -->
-  <div class="table-wrap">
-    <table class="data-table" id="table-flux">
-      <thead>
-        <tr>
-          <th>Flux</th>
-          <th class="num">Prévisions</th>
-          <th class="num">Écarts ≥ 40 %</th>
-          <th class="num">% Écarts</th>
-          <th class="num">Valorisation (k€)</th>
-        </tr>
-      </thead>
-      <tbody id="tbody-flux"></tbody>
-    </table>
-  </div>
+      <!-- Erreur -->
+      <div id="state-error" hidden>
+        <div class="state-error-inner">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">
+            <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+            <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+          <span id="error-msg">Erreur inconnue</span>
+        </div>
+      </div>
 
-</div><!-- /state-result -->
+      <!-- Résultat -->
+      <div id="state-result" hidden>
+
+        <!-- KPIs -->
+        <div class="kpi-grid" style="grid-template-columns:repeat(auto-fit,minmax(160px,1fr));margin-bottom:16px;" id="kpi-row"></div>
+
+        <!-- Chart 1 : Volume -->
+        <div class="chart-container">
+          <div class="chart-header">
+            <div>
+              <div class="chart-title">Nombre d'écarts importants par flux</div>
+              <div class="chart-subtitle">Volume d'écarts ≥ 40 % détectés pour chaque flux</div>
+            </div>
+          </div>
+          <div class="chart-canvas-wrap" id="wrap-chart1" style="height:420px;">
+            <canvas id="chart-volume"></canvas>
+          </div>
+        </div>
+
+        <!-- Chart 2 : Fréquence -->
+        <div class="chart-container">
+          <div class="chart-header">
+            <div>
+              <div class="chart-title">Pourcentage d'écarts par flux</div>
+              <div class="chart-subtitle">Rapport entre écarts significatifs et prévisions non vides</div>
+            </div>
+          </div>
+          <div class="chart-canvas-wrap" id="wrap-chart2" style="height:420px;">
+            <canvas id="chart-freq"></canvas>
+          </div>
+        </div>
+
+        <!-- Chart 3 : Valorisation -->
+        <div class="chart-container">
+          <div class="chart-header">
+            <div>
+              <div class="chart-title">Valorisation signée des écarts</div>
+              <div class="chart-subtitle">Montant cumulé signé des écarts (k€) — filtrable par profil</div>
+            </div>
+          </div>
+          <div class="chart-canvas-wrap" id="wrap-chart3" style="height:420px;">
+            <canvas id="chart-valo"></canvas>
+          </div>
+        </div>
+
+        <!-- Tableau -->
+        <div class="table-wrap">
+          <table class="data-table" id="table-flux">
+            <thead>
+              <tr>
+                <th>Flux</th>
+                <th class="num">Prévisions</th>
+                <th class="num">Écarts ≥ 40 %</th>
+                <th class="num">% Écarts</th>
+                <th class="num">Valorisation (k€)</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-flux"></tbody>
+          </table>
+        </div>
+
+      </div><!-- /state-result -->
+
+    </div><!-- /charts-scroll -->
+
+  </div><!-- /chart-panel -->
+
+</div><!-- /visu-layout -->
 
 {% endblock %}
 

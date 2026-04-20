@@ -246,19 +246,27 @@ async function lancerHeatmap() {
 
   btnLancer.addEventListener("click", lancerHeatmap);
 
+  document.getElementById("btn-reset-filters")?.addEventListener("click", () => {
+    if (selSection) selSection.selectedIndex = 0;
+    if (selAnnee)   { selAnnee.innerHTML = '<option value="">—</option>'; selAnnee.disabled = true; }
+    if (selFlux)    { selFlux.innerHTML = '<option value="Tous flux">Tous flux</option>'; selFlux.disabled = true; }
+    btnLancer.disabled = true;
+    window.toast?.("Filtres réinitialisés", "info");
+  });
+
   document.getElementById("btn-export-pdf")?.addEventListener("click", () => {
-    window.pulsePDF("Heatmap des écarts — PULSE");
+    window.pulsePDF("Heatmap-ecarts-PULSE", ".hm-layout");
   });
 
   document.getElementById("btn-export-excel")?.addEventListener("click", () => {
-    if (!_data) { alert("Lancez d'abord la heatmap."); return; }
+    if (!_data) { window.toast?.("Lancez d'abord la heatmap.", "error"); return; }
     const section = selSection?.value || "Section";
     /* Exporter via le premier graphique disponible */
     const chart = chartVolume || chartFreq || chartValo;
     if (chart) {
       window.pulseExcelChart(chart, `heatmap_ecarts_${section}`);
     } else {
-      alert("Aucune donnée graphique à exporter.");
+      window.toast?.("Aucune donnée graphique à exporter.", "error");
     }
   });
 

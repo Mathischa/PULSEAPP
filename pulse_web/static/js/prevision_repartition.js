@@ -9,25 +9,43 @@ let chartValueInstance = null;
 // ======================================================
 // HELPERS
 // ======================================================
+function getWrap(container) {
+  return container.querySelector('.chart-canvas-wrap') || container;
+}
+
+function showPlaceholder() {
+  const PLACEHOLDER_HTML = `
+    <div class="state-loading-inner" style="flex-direction:column;gap:10px;">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="rgba(76,124,243,.35)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+      </svg>
+      <span style="font-size:12px;color:#334155;">Sélectionnez vos filtres puis cliquez sur <strong style="color:#4C7CF3;">Analyser</strong></span>
+    </div>`;
+  getWrap(document.getElementById('chart1Container')).innerHTML = PLACEHOLDER_HTML;
+  getWrap(document.getElementById('chart2Container')).innerHTML = PLACEHOLDER_HTML;
+  document.getElementById('tableBody').innerHTML =
+    `<tr><td colspan="5" class="no-data">Lancez l'analyse pour afficher les données.</td></tr>`;
+  if (chartRateInstance)  { chartRateInstance.destroy();  chartRateInstance  = null; }
+  if (chartValueInstance) { chartValueInstance.destroy(); chartValueInstance = null; }
+  const btnExcel = document.getElementById("btn-export-excel");
+  if (btnExcel) btnExcel.disabled = true;
+}
+
 function showLoading(container) {
-  container.innerHTML = `
-    <div class="chart-placeholder">
-      <div class="loading-state">
-        <div class="loading-spinner"></div>
-        Chargement des données...
-      </div>
-    </div>
-  `;
+  const wrap = getWrap(container);
+  wrap.innerHTML = `
+    <div class="state-loading-inner">
+      <div class="loading-spinner"></div>
+      Chargement des données…
+    </div>`;
 }
 
 function showEmpty(container) {
-  container.innerHTML = `
-    <div class="chart-placeholder">
-      <div style="color: #7c8798; font-size: 14px;">
-        ⚠️ Aucune donnée disponible pour ce filtre.
-      </div>
-    </div>
-  `;
+  const wrap = getWrap(container);
+  wrap.innerHTML = `
+    <div class="state-loading-inner" style="color:#475569;">
+      Aucune donnée disponible pour ce filtre.
+    </div>`;
 }
 
 function formatNumber(n) {
@@ -59,13 +77,18 @@ async function loadConfig() {
       `<option ${fl === 'Tous les flux' ? 'selected' : ''}>${fl}</option>`
     ).join('');
 
-    // Add listeners
-    filialeSelect.addEventListener('change', updateCharts);
-    anneeSelect.addEventListener('change', updateCharts);
-    fluxSelect.addEventListener('change', updateCharts);
+    // Bouton Analyser — déclenchement manuel uniquement
+    document.getElementById("btn-analyser")?.addEventListener("click", updateCharts);
+
+    document.getElementById("btn-reset-filters")?.addEventListener("click", () => {
+      filialeSelect.selectedIndex = 0;
+      anneeSelect.selectedIndex = 0;
+      fluxSelect.selectedIndex = 0;
+      showPlaceholder();
+    });
 
     document.getElementById("btn-export-pdf")?.addEventListener("click", () => {
-      window.pulsePDF("Répartition des écarts par profil — PULSE");
+      window.pulseChartPDF(null, "Repartition-ecarts-profil-PULSE");
     });
 
     document.getElementById("btn-export-excel")?.addEventListener("click", () => {
@@ -73,12 +96,12 @@ async function loadConfig() {
       if (chart) {
         window.pulseExcelChart(chart, "prevision_repartition");
       } else {
-        alert("Aucun graphique disponible.");
+        window.toast?.("Aucun graphique disponible.", "error");
       }
     });
 
-    // Initial load
-    await updateCharts();
+    // Afficher l'état d'attente au démarrage
+    showPlaceholder();
   } catch (error) {
     console.error('Error loading config:', error);
   }
@@ -139,9 +162,10 @@ function renderCharts(data, filiale, annee) {
 
   // ===== CHART 1: TAUX =====
   const container1 = document.getElementById('chart1Container');
+  const wrap1 = container1.querySelector('.chart-canvas-wrap') || container1;
   const canvas1 = document.createElement('canvas');
-  container1.innerHTML = '';
-  container1.appendChild(canvas1);
+  wrap1.innerHTML = '';
+  wrap1.appendChild(canvas1);
 
   const ctx1 = canvas1.getContext('2d');
   const colors1 = data.taux.map(pct => {
@@ -208,9 +232,10 @@ function renderCharts(data, filiale, annee) {
 
   // ===== CHART 2: VALORISATION =====
   const container2 = document.getElementById('chart2Container');
+  const wrap2 = container2.querySelector('.chart-canvas-wrap') || container2;
   const canvas2 = document.createElement('canvas');
-  container2.innerHTML = '';
-  container2.appendChild(canvas2);
+  wrap2.innerHTML = '';
+  wrap2.appendChild(canvas2);
 
   const ctx2 = canvas2.getContext('2d');
   const maxV = Math.max(...data.valorisation, 1);

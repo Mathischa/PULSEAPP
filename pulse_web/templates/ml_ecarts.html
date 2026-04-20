@@ -14,6 +14,9 @@
   align-items: stretch;
   min-height: calc(100vh - 160px);
 }
+@media (max-width: 1024px) {
+  .ml-layout { grid-template-columns: 1fr; }
+}
 
 /* ── PANNEAU GAUCHE ──────────────────────────────────────────── */
 .ml-ctrl {
@@ -23,11 +26,15 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  position: sticky;
+  top: 0;
+  max-height: calc(100vh - 100px);
 }
 .ml-ctrl-header {
   padding: 18px 18px 14px;
   border-bottom: 1px solid rgba(255,255,255,.07);
   background: rgba(76,124,243,.06);
+  flex-shrink: 0;
 }
 .ml-ctrl-header-title { font-size: 13px; font-weight: 700; color: #F3F4F6; letter-spacing: .02em; }
 .ml-ctrl-header-sub   { font-size: 11px; color: #64748B; margin-top: 3px; }
@@ -71,7 +78,7 @@
 .mode-btn:hover { background: rgba(16,185,129,.15); color: #6EE7B7; border-color: rgba(16,185,129,.4); }
 .mode-btn.active { background: #10B981; border-color: #10B981; color: #fff; box-shadow: 0 0 10px rgba(16,185,129,.35); }
 
-.ml-ctrl-footer { padding: 12px 14px; border-top: 1px solid rgba(255,255,255,.07); }
+.ml-ctrl-footer { padding: 12px 14px; border-top: 1px solid rgba(255,255,255,.07); flex-shrink: 0; }
 
 /* ── PANNEAU DROIT ───────────────────────────────────────────── */
 .ml-main {
@@ -121,8 +128,8 @@
 }
 .ml-chart-card-title { font-size: 12px; font-weight: 700; color: #CBD5E1; }
 .ml-chart-card-sub   { font-size: 11px; color: #475569; margin-top: 2px; }
-.ml-chart-wrap { position: relative; width: 100%; height: 420px; padding: 12px; }
-.ml-chart-wrap-sm { position: relative; width: 100%; height: 220px; padding: 12px; }
+.ml-chart-wrap { position: relative; width: 100%; height: clamp(320px, 38vh, 800px); padding: 12px; }
+.ml-chart-wrap-sm { position: relative; width: 100%; height: clamp(180px, 22vh, 420px); padding: 12px; }
 
 /* KPI row */
 .ml-kpi-row {
@@ -224,6 +231,10 @@
     <h1>Machine Learning — Analyse des écarts</h1>
     <p class="subtitle">Clustering 2D (KMeans / DBSCAN), détection d'anomalies et analyse explicative.</p>
   </div>
+  <div class="page-header-actions">
+    <button class="btn btn--secondary btn--sm" id="btn-export-pdf">📄 PDF</button>
+    <button class="btn btn--secondary btn--sm" id="btn-export-excel" disabled>📊 Excel</button>
+  </div>
 </div>
 
 <div class="ml-layout">
@@ -292,6 +303,10 @@
     </div><!-- /ctrl-body -->
 
     <div class="ml-ctrl-footer">
+      <button class="btn btn--ghost btn--sm" id="btn-reset-filters" style="width:100%;justify-content:center;margin-bottom:8px;" title="Réinitialiser les filtres">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+        Réinitialiser
+      </button>
       <button class="btn btn--primary" id="btn-lancer"
               style="width:100%;justify-content:center;" disabled>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">

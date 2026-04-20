@@ -14,21 +14,31 @@ from .cache import CACHE, TOKENS
 
 def charger_donnees(section: str, offset: int = 0) -> tuple[str, list[tuple[str, int]]]:
     """
-    Charge les données de base pour une section/feuille.
-    
-    Args:
-        section: Nom de la section/feuille
-        offset: Décalage de colonne (non utilisé pour l'instant)
-    
-    Returns:
-        (feuille, [(nom_flux, col_idx), ...])
-    
-    Récupère la liste des flux disponibles dans une feuille depuis TOKENS.
+    Charge les données de base pour une section/feuille en filtrant les flux inutiles.
     """
-    # Récupère les flux pour cette section depuis TOKENS
+
+    noms_a_exclure = {
+        "Trésorerie de fin",
+        "Cashpool",
+        "Emprunts",
+        "Tirages Lignes CT",
+        "Variation de collatéral",
+        "Créances CDP",
+        "Placements",
+        "CC financiers",
+        "Emprunts / Prêts - Groupe",
+        "Encours de financement",
+        "Endettement Net",
+    }
+
     flux_list = TOKENS.get(section, [])
-    # Retourne la feuille et la liste des (nom_flux, col_start)
-    return section, flux_list
+
+    # Filtrage
+    filtered_flux = [
+        (name, col) for name, col in flux_list if name not in noms_a_exclure
+    ]
+
+    return section, filtered_flux
 
 
 def extraire_valeurs(

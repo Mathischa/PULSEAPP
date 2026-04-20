@@ -103,8 +103,31 @@ function render(data) {
   tbody.appendChild(frag);
 }
 
+/* ── URL state ────────────────────────────────────────────── */
+function pushUrlState() {
+  const p = new URLSearchParams();
+  const annee   = document.getElementById("f-annee")?.value;
+  const filiale = document.getElementById("f-filiale")?.value;
+  const flux    = document.getElementById("f-flux")?.value;
+  const fav     = document.getElementById("f-fav")?.value;
+  if (annee)   p.set("annee",   annee);
+  if (filiale) p.set("filiale", filiale);
+  if (flux)    p.set("flux",    flux);
+  if (fav)     p.set("fav",     fav);
+  const qs = p.toString();
+  history.replaceState(null, "", qs ? "?" + qs : location.pathname);
+}
+
+function restoreFromUrl() {
+  const p = new URLSearchParams(location.search);
+  if (p.get("annee"))   document.getElementById("f-annee").value   = p.get("annee");
+  if (p.get("filiale")) document.getElementById("f-filiale").value = p.get("filiale");
+  if (p.get("flux"))    document.getElementById("f-flux").value    = p.get("flux");
+  if (p.get("fav"))     document.getElementById("f-fav").value     = p.get("fav");
+}
+
 /* ── Mise à jour complète ─────────────────────────────────── */
-function update() { render(sortData(getFiltered())); }
+function update() { render(sortData(getFiltered())); pushUrlState(); }
 
 /* ── Export PDF ───────────────────────────────────────────── */
 function exportPDF() {
@@ -171,6 +194,16 @@ document.querySelectorAll(".data-table thead th[data-col]").forEach((th) => {
   document.getElementById(id).addEventListener("change", update)
 );
 
+/* ── Reset filtres ────────────────────────────────────────── */
+document.getElementById("btn-reset-filters")?.addEventListener("click", () => {
+  ["f-annee", "f-filiale", "f-flux", "f-fav"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.selectedIndex = 0;
+  });
+  update();
+  window.toast?.("Filtres réinitialisés", "info");
+});
+
 /* ── Export buttons ───────────────────────────────────────── */
 document.getElementById("btn-export-pdf").addEventListener("click", exportPDF);
 document.getElementById("btn-export-excel").addEventListener("click", exportExcel);
@@ -194,6 +227,7 @@ document.getElementById("btn-export").addEventListener("click", exportCSV);
     if (btnExcel) btnExcel.disabled = false;
 
     initFilters(allData);
+    restoreFromUrl();
 
     /* Indicateur tri initial */
     document.querySelector('th[data-col="ecart_pct"]')?.classList.add("sort-desc");

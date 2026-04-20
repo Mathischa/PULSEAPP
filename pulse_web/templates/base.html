@@ -13,6 +13,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
   {% block head %}{% endblock %}
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/responsive.css') }}" />
 
   <style>
     /* ══════════════════════════════════════════════════════════════
@@ -227,6 +228,255 @@
       font-family: 'Courier New',monospace; font-size: .57rem;
       letter-spacing: .16em; color: rgba(45,85,155,.4);
       white-space: nowrap; animation: sp-fadeup 1s 1.2s ease both;
+    }
+
+    /* ══════════════════════════════════════════════════════════════
+       HEADER — Barre de recherche — Liquid Glass
+    ══════════════════════════════════════════════════════════════ */
+    .header-search {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 2;
+      display: flex;
+      justify-content: center;
+      width: clamp(220px, 28vw, 420px);
+      pointer-events: none;
+    }
+    .header-search__trigger {
+      display: flex; align-items: center; gap: 9px;
+
+      /* ── Liquid Glass ── */
+      background: rgba(255,255,255,0.055);
+      backdrop-filter: blur(24px) saturate(180%);
+      -webkit-backdrop-filter: blur(24px) saturate(180%);
+      border: 1px solid rgba(255,255,255,0.095);
+      border-radius: 100px;
+
+      /* Glass edges */
+      box-shadow:
+        inset 0  1px 0 rgba(255,255,255,0.13),
+        inset 0 -1px 0 rgba(0,0,0,0.10),
+        0 4px 12px rgba(0,0,0,0.22),
+        0 1px  3px rgba(0,0,0,0.14);
+
+      padding: 8px 16px 8px 13px;
+      color: rgba(255,255,255,0.36);
+      font-size: 12.5px; font-family: inherit;
+      cursor: pointer;
+      width: 100%;
+      white-space: nowrap;
+      pointer-events: auto;
+      position: relative;
+      overflow: hidden;
+      transition: background .25s ease, border-color .25s ease,
+                  box-shadow .25s ease, color .25s ease;
+      --sx: 30%; --sy: -20%;
+    }
+
+    /* Top edge shimmer */
+    .header-search__trigger::before {
+      content: "";
+      position: absolute;
+      top: 0; left: 12%; right: 12%;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.24), transparent);
+      pointer-events: none;
+    }
+
+    /* Specular radial — suit la souris via JS */
+    .header-search__trigger::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(
+        circle at var(--sx) var(--sy),
+        rgba(255,255,255,0.09) 0%,
+        transparent 55%
+      );
+      pointer-events: none;
+      transition: opacity .3s;
+    }
+
+    .header-search__trigger:hover {
+      background: rgba(255,255,255,0.08);
+      border-color: rgba(77,135,245,0.32);
+      color: rgba(255,255,255,0.62);
+      box-shadow:
+        inset 0  1px 0 rgba(255,255,255,0.18),
+        inset 0 -1px 0 rgba(0,0,0,0.06),
+        0 0 0 3px rgba(77,135,245,0.09),
+        0 8px 24px rgba(0,0,0,0.28),
+        0 2px  6px rgba(0,0,0,0.14);
+    }
+
+    .header-search__icon {
+      width: 14px; height: 14px; flex-shrink: 0;
+      color: rgba(77,135,245,0.75);
+      position: relative; z-index: 1;
+    }
+    .header-search__placeholder {
+      flex: 1; text-align: left; overflow: hidden; text-overflow: ellipsis;
+      position: relative; z-index: 1;
+    }
+    .header-search__kbd {
+      font-size: 10px; font-family: 'Courier New', monospace;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.09);
+      border-radius: 6px; padding: 2px 7px;
+      color: rgba(255,255,255,0.25);
+      flex-shrink: 0; white-space: nowrap;
+      letter-spacing: .02em;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.06), 0 1px 2px rgba(0,0,0,0.2);
+      position: relative; z-index: 1;
+    }
+
+    /* ══════════════════════════════════════════════════════════════
+       COMMAND PALETTE — Liquid Glass Panel
+    ══════════════════════════════════════════════════════════════ */
+    .cmd-backdrop {
+      position: fixed; inset: 0; z-index: 9000;
+      background: rgba(2,5,14,.68);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      opacity: 0; transition: opacity .22s ease;
+    }
+    .cmd-backdrop--in { opacity: 1; }
+
+    .cmd-palette {
+      position: fixed; top: 13vh; left: 50%; z-index: 9001;
+      transform: translateX(-50%) translateY(-18px) scale(.96);
+      width: min(640px, calc(100vw - 32px));
+
+      /* ── Liquid Glass panel ── */
+      background: rgba(9, 13, 24, 0.80);
+      backdrop-filter: blur(48px) saturate(190%);
+      -webkit-backdrop-filter: blur(48px) saturate(190%);
+      border: 1px solid rgba(255,255,255,0.10);
+      border-radius: 20px;
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.10),
+        inset 0 0 0 1px rgba(255,255,255,0.03),
+        0 0 0 1px rgba(0,0,0,0.25),
+        0 32px 80px rgba(0,0,0,0.65),
+        0  0  60px rgba(77,135,245,0.07);
+
+      overflow: hidden;
+      opacity: 0; transition: opacity .22s ease, transform .22s cubic-bezier(.16,1,.3,1);
+    }
+    .cmd-palette--in {
+      opacity: 1; transform: translateX(-50%) translateY(0) scale(1);
+    }
+
+    /* Header */
+    .cmd-header {
+      display: flex; align-items: center; gap: 12px;
+      padding: 15px 20px;
+      border-bottom: 1px solid rgba(255,255,255,.055);
+      background: rgba(255,255,255,0.028);
+      /* Top highlight repris du panel */
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.06);
+    }
+    .cmd-search-icon {
+      width: 17px; height: 17px; flex-shrink: 0;
+      color: #4D87F5; opacity: .8;
+    }
+    .cmd-input {
+      flex: 1; background: transparent; border: none; outline: none;
+      font-size: 14.5px; font-family: inherit; color: #E2E8F0;
+      caret-color: #4D87F5;
+      letter-spacing: .01em;
+    }
+    .cmd-input::placeholder { color: #2E364A; }
+    .cmd-esc-hint {
+      font-size: 10px; font-family: 'Courier New', monospace;
+      background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.08);
+      border-radius: 5px; padding: 2px 7px; color: #334155; flex-shrink: 0;
+    }
+
+    /* Results */
+    .cmd-results {
+      max-height: 360px; overflow-y: auto;
+      padding: 6px 0;
+    }
+    .cmd-results::-webkit-scrollbar { width: 4px; }
+    .cmd-results::-webkit-scrollbar-track { background: transparent; }
+    .cmd-results::-webkit-scrollbar-thumb { background: rgba(255,255,255,.12); border-radius: 2px; }
+
+    .cmd-group-label {
+      padding: 10px 18px 4px;
+      font-size: 10px; font-weight: 700; color: #334155;
+      text-transform: uppercase; letter-spacing: .1em;
+    }
+    .cmd-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 10px 18px;
+      text-decoration: none; color: #94a3b8;
+      font-size: 13.5px;
+      transition: background .1s, color .1s;
+      cursor: pointer;
+    }
+    .cmd-item:hover,
+    .cmd-item--active {
+      background: linear-gradient(90deg, rgba(77,135,245,.12), rgba(77,135,245,.04));
+      color: #E2E8F0;
+    }
+    .cmd-item--active {
+      box-shadow: inset 3px 0 0 #4D87F5;
+    }
+    .cmd-item__icon {
+      width: 18px; height: 18px; flex-shrink: 0;
+      color: #4C7CF3; opacity: .7;
+      display: flex; align-items: center;
+    }
+    .cmd-item__icon svg { width: 100%; height: 100%; }
+    .cmd-item__label { flex: 1; min-width: 0; }
+    .cmd-item__label mark {
+      background: transparent; color: #7ab8ff; font-weight: 700;
+    }
+    .cmd-item__cat {
+      font-size: 11px; color: #334155; flex-shrink: 0;
+    }
+    .cmd-item__chevron {
+      width: 16px; height: 16px; flex-shrink: 0; opacity: .3;
+    }
+    .cmd-item__chevron svg { width: 100%; height: 100%; }
+    .cmd-empty {
+      padding: 32px 18px; text-align: center;
+      font-size: 13px; color: #475569;
+    }
+
+    /* Footer */
+    .cmd-footer {
+      display: flex; gap: 16px; align-items: center;
+      padding: 10px 18px;
+      border-top: 1px solid rgba(255,255,255,.05);
+      font-size: 11px; color: #334155;
+    }
+    .cmd-footer kbd {
+      font-family: 'Courier New', monospace; font-size: 10px;
+      background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.09);
+      border-radius: 4px; padding: 1px 5px; color: #475569;
+      margin-right: 3px;
+    }
+
+    /* Responsive — petit écran : icône seule */
+    @media (max-width: 768px) {
+      .header-search {
+        width: auto;
+        left: auto;
+        right: 60px;
+        transform: none;
+        position: absolute;
+      }
+      .header-search__placeholder { display: none; }
+      .header-search__kbd { display: none; }
+      .header-search__trigger {
+        width: 36px; height: 36px;
+        padding: 0;
+        justify-content: center;
+        border-radius: 10px;
+      }
     }
   </style>
 </head>
@@ -511,7 +761,7 @@
           <svg class="breadcrumb-home-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
             <path d="M3 12L12 3l9 9"/><path d="M9 21V12h6v9"/>
           </svg>
-          <span class="breadcrumb-root">DCF Groupe</span>
+          <span class="breadcrumb-root">DCF</span>
           <svg class="breadcrumb-sep-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
             <polyline points="9 18 15 12 9 6"/>
           </svg>
@@ -519,15 +769,26 @@
         </nav>
       </div>
 
-      <!-- Droite : status + date -->
+      <!-- Recherche rapide -->
+      <div class="header-search">
+        <button id="cmd-trigger-btn" class="header-search__trigger" type="button" aria-label="Recherche rapide (Ctrl+K)">
+          <svg class="header-search__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+          <span class="header-search__placeholder">Rechercher une page…</span>
+          <kbd class="header-search__kbd">Ctrl K</kbd>
+        </button>
+      </div>
+
+      <!-- Droite : métriques contextuelles + status + date -->
       <div class="header-right">
-        {% block header_right %}
+        <div id="header-metrics" class="header-metrics"></div>
         <div class="header-date" id="header-clock"></div>
+        <div class="header-vsep"></div>
         <div class="status-pill">
           <span class="status-dot"></span>
           <span>Opérationnel</span>
         </div>
-        {% endblock %}
       </div>
 
     </header>
@@ -542,15 +803,15 @@
         <div class="sidebar-body">
 
           <!-- Principal -->
-          <div class="nav-group">
+          <div class="nav-group" data-cat="principal">
             <p class="nav-group-label">Principal</p>
-            <a href="/" class="nav-item {% if active_page == 'accueil' %}active{% endif %}">
+            <a href="/" class="nav-item {% if active_page == 'accueil' %}active{% endif %}" title="Tableau de bord">
               <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
                 <path d="M3 12L12 3l9 9"/><path d="M9 21V12h6v9"/>
               </svg>
               <span>Tableau de bord</span>
             </a>
-            <a href="/import" class="nav-item {% if active_page == 'import_profils' %}active{% endif %}">
+            <a href="/import" class="nav-item {% if active_page == 'import_profils' %}active{% endif %}" title="Import des profils">
               <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
                 <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
                 <polyline points="7 10 12 15 17 10"/>
@@ -560,17 +821,18 @@
             </a>
           </div>
 
-          <!-- Surveillance -->
-          <div class="nav-group">
-            <p class="nav-group-label">Surveillance</p>
-            <a href="/ecarts" class="nav-item {% if active_page == 'ecarts' %}active{% endif %}">
+          <!-- Analyse des flux réel -->
+          <div class="nav-group" data-cat="flux">
+            <p class="nav-group-label">Analyse des flux réel</p>
+            <a href="/visualisation_flux" class="nav-item {% if active_page == 'visualisation_flux' %}active{% endif %}" title="Superposition">
               <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
-                <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
-                <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+                <polygon points="12 2 2 7 12 12 22 7 12 2"/>
+                <polyline points="2 17 12 22 22 17"/>
+                <polyline points="2 12 12 17 22 12"/>
               </svg>
-              <span>Écarts importants</span>
+              <span>Superposition</span>
             </a>
-            <a href="/tendance" class="nav-item {% if active_page == 'tendance' %}active{% endif %}">
+            <a href="/tendance" class="nav-item {% if active_page == 'tendance' %}active{% endif %}" title="Tendance flux">
               <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
                 <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
               </svg>
@@ -578,44 +840,34 @@
             </a>
           </div>
 
-          <!-- Analyse -->
-          <div class="nav-group">
-            <p class="nav-group-label">Analyse</p>
-            <a href="/visualisation" class="nav-item {% if active_page == 'visualisation' %}active{% endif %}">
+          <!-- Analyse des écarts des prévisions réalisées -->
+          <div class="nav-group" data-cat="ecarts">
+            <p class="nav-group-label">Analyse des écarts</p>
+            <a href="/visualisation" class="nav-item {% if active_page == 'visualisation' %}active{% endif %}" title="Visualisation">
               <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
                 <circle cx="12" cy="12" r="1.5"/>
                 <path d="M2 12C4 7 8 4 12 4s8 3 10 8c-2 5-6 8-10 8S4 17 2 12z"/>
               </svg>
               <span>Visualisation</span>
             </a>
-            <a href="/visualisation_flux" class="nav-item {% if active_page == 'visualisation_flux' %}active{% endif %}">
-              <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
-                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
-                <line x1="5" y1="3" x2="5" y2="21" stroke-width="1.5" opacity=".5"/>
-              </svg>
-              <span>Superposition années</span>
-            </a>
-            <a href="/benchmarking" class="nav-item {% if active_page == 'benchmarking' %}active{% endif %}">
-              <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
-                <circle cx="7" cy="7" r="1.5"/>
-                <circle cx="17" cy="17" r="1.5"/>
-                <circle cx="7" cy="17" r="1.5"/>
-                <circle cx="17" cy="7" r="1.5"/>
-                <line x1="7" y1="7" x2="17" y2="17" stroke-width="1.2" opacity=".6"/>
-                <line x1="3" y1="3" x2="21" y2="3" stroke-width="1.2" opacity=".4"/>
-                <line x1="3" y1="21" x2="21" y2="21" stroke-width="1.2" opacity=".4"/>
-              </svg>
-              <span>Benchmarking</span>
-            </a>
-            <a href="/repartition" class="nav-item {% if active_page == 'repartition' %}active{% endif %}">
+            <a href="/repartition" class="nav-item {% if active_page == 'repartition' %}active{% endif %}" title="Répartition par filiale">
               <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
                 <rect x="18" y="3" width="3" height="18" rx="1"/>
                 <rect x="10.5" y="8" width="3" height="13" rx="1"/>
                 <rect x="3" y="13" width="3" height="8" rx="1"/>
               </svg>
-              <span>Répartition filiales</span>
+              <span>Répartition par filiale</span>
             </a>
-            <a href="/repartition_flux" class="nav-item {% if active_page == 'repartition_flux' %}active{% endif %}">
+            <a href="/prevision_repartition" class="nav-item {% if active_page == 'prevision_repartition' %}active{% endif %}" title="Répartition par profil">
+              <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+                <line x1="3" y1="12" x2="21" y2="12"/>
+                <rect x="3" y="2" width="4" height="8" rx="1"/>
+                <rect x="9" y="5" width="4" height="14" rx="1"/>
+                <rect x="15" y="3" width="4" height="16" rx="1"/>
+              </svg>
+              <span>Répartition par profil</span>
+            </a>
+            <a href="/repartition_flux" class="nav-item {% if active_page == 'repartition_flux' %}active{% endif %}" title="Répartition par flux">
               <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
                 <line x1="3" y1="8"  x2="21" y2="8"/>
                 <line x1="3" y1="12" x2="17" y2="12"/>
@@ -623,29 +875,7 @@
               </svg>
               <span>Répartition par flux</span>
             </a>
-            <a href="/prevision_repartition" class="nav-item {% if active_page == 'prevision_repartition' %}active{% endif %}">
-              <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
-                <line x1="3" y1="12" x2="21" y2="12"/>
-                <rect x="3" y="2" width="4" height="8" rx="1"/>
-                <rect x="9" y="5" width="4" height="14" rx="1"/>
-                <rect x="15" y="3" width="4" height="16" rx="1"/>
-              </svg>
-              <span>Par profil</span>
-            </a>
-          </div>
-
-          <!-- Intelligence artificielle -->
-          <div class="nav-group">
-            <p class="nav-group-label">Intelligence artificielle</p>
-            <a href="/heatmap" class="nav-item {% if active_page == 'heatmap' %}active{% endif %}">
-              <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
-                <rect x="3" y="3" width="18" height="18" rx="2"/>
-                <line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/>
-                <line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/>
-              </svg>
-              <span>Heatmap des anomalies</span>
-            </a>
-            <a href="/heatmap_ecarts" class="nav-item {% if active_page == 'heatmap_ecarts' %}active{% endif %}">
+            <a href="/heatmap_ecarts" class="nav-item {% if active_page == 'heatmap_ecarts' %}active{% endif %}" title="Heatmap des écarts">
               <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
                 <rect x="3" y="3" width="18" height="18" rx="2"/>
                 <line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/>
@@ -653,7 +883,30 @@
               </svg>
               <span>Heatmap des écarts</span>
             </a>
-            <a href="/ml_ecarts" class="nav-item {% if active_page == 'ml_ecarts' %}active{% endif %}">
+            <a href="/benchmarking" class="nav-item {% if active_page == 'benchmarking' %}active{% endif %}" title="Benchmarking">
+              <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+                <circle cx="7" cy="7" r="1.5"/><circle cx="17" cy="17" r="1.5"/>
+                <circle cx="7" cy="17" r="1.5"/><circle cx="17" cy="7" r="1.5"/>
+                <line x1="7" y1="7" x2="17" y2="17" stroke-width="1.2" opacity=".6"/>
+                <line x1="3" y1="3" x2="21" y2="3" stroke-width="1.2" opacity=".4"/>
+                <line x1="3" y1="21" x2="21" y2="21" stroke-width="1.2" opacity=".4"/>
+              </svg>
+              <span>Benchmarking</span>
+            </a>
+          </div>
+
+          <!-- Analyse Intelligence artificielle -->
+          <div class="nav-group" data-cat="ia">
+            <p class="nav-group-label">Intelligence artificielle</p>
+            <a href="/heatmap" class="nav-item {% if active_page == 'heatmap' %}active{% endif %}" title="Heatmap des anomalies">
+              <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+                <path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/>
+                <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+                <line x1="12" y1="22.08" x2="12" y2="12"/>
+              </svg>
+              <span>Heatmap des anomalies</span>
+            </a>
+            <a href="/ml_ecarts" class="nav-item {% if active_page == 'ml_ecarts' %}active{% endif %}" title="Clustering ML">
               <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
                 <circle cx="12" cy="4" r="2"/><circle cx="4" cy="20" r="2"/><circle cx="20" cy="20" r="2"/>
                 <line x1="12" y1="6" x2="4" y2="18"/><line x1="12" y1="6" x2="20" y2="18"/>
@@ -661,14 +914,6 @@
               </svg>
               <span>Clustering ML</span>
             </a>
-            <span class="nav-item disabled">
-              <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
-                <path d="M12 2L2 7l10 5 10-5-10-5z"/>
-                <path d="M2 17l10 5 10-5M2 12l10 5 10-5"/>
-              </svg>
-              <span>3D Clustering</span>
-              <span class="nav-badge">Soon</span>
-            </span>
           </div>
 
           {% block sidebar_extra %}{% endblock %}
@@ -677,11 +922,16 @@
         <!-- Footer sidebar -->
         <div class="sidebar-footer">
           <div class="sidebar-footer__brand">
-            <img src="{{ url_for('static', filename='img/logo_Pulse.png') }}"
-                 alt="PULSE" class="sidebar-footer__logo" />
-            <span class="sidebar-footer__name">PULSE</span>
+            <div class="sidebar-footer__logo-wrap">
+              <img src="{{ url_for('static', filename='img/logo_Pulse.png') }}"
+                   alt="PULSE" class="sidebar-footer__logo" />
+            </div>
+            <div class="sidebar-footer__info">
+              <span class="sidebar-footer__name">PULSE</span>
+              <span class="sidebar-footer__ver">v2.0</span>
+            </div>
           </div>
-          <div class="sidebar-footer__sub">DCF Groupe &copy; 2025 — Monitoring & Flux</div>
+          <div class="sidebar-footer__sub">DCF Groupe · 2025</div>
         </div>
       </aside>
 
@@ -745,6 +995,32 @@
     })();
   </script>
 
+  <!-- Métriques header — remplies par les pages via window.pulseMetrics -->
+  <script>
+    (() => {
+      const ICONS = {
+        files:    `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>`,
+        calendar: `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`,
+        sections: `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>`,
+      };
+      function renderMetrics(metrics) {
+        const el = document.getElementById('header-metrics');
+        if (!el || !metrics || !metrics.length) return;
+        el.innerHTML = metrics.map(m => `
+          <div class="header-metric">
+            <span class="header-metric__icon">${ICONS[m.icon] || ''}</span>
+            <span class="header-metric__val">${m.val}</span>
+            <span class="header-metric__label">${m.label}</span>
+          </div>`).join('') + '<div class="header-vsep"></div>';
+      }
+      // Attendre que la page expose ses données
+      document.addEventListener('DOMContentLoaded', () => {
+        if (window.pulseMetrics) renderMetrics(window.pulseMetrics);
+      });
+      window.setPulseMetrics = renderMetrics;
+    })();
+  </script>
+
   <!-- Horloge header -->
   <script>
     (() => {
@@ -761,7 +1037,50 @@
     })();
   </script>
 
+  <!-- ============================================================
+       COMMAND PALETTE
+  ============================================================ -->
+  <div id="cmd-backdrop" class="cmd-backdrop" hidden></div>
+  <div id="cmd-palette" class="cmd-palette" role="dialog" aria-modal="true" aria-label="Recherche rapide" hidden>
+    <div class="cmd-header">
+      <svg class="cmd-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+      <input id="cmd-input" class="cmd-input" type="text" placeholder="Rechercher une page, une section…" autocomplete="off" spellcheck="false" />
+      <kbd class="cmd-esc-hint">Esc</kbd>
+    </div>
+    <div id="cmd-results" class="cmd-results"></div>
+    <div class="cmd-footer">
+      <span><kbd>↑</kbd><kbd>↓</kbd> naviguer</span>
+      <span><kbd>↵</kbd> ouvrir</span>
+      <span><kbd>Esc</kbd> fermer</span>
+    </div>
+  </div>
+
   <script src="{{ url_for('static', filename='js/export_utils.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/command_palette.js') }}"></script>
   {% block scripts %}{% endblock %}
+
+  <!-- Liquid glass — search bar specular tracking -->
+  <script>
+  (function () {
+    const btn = document.getElementById('cmd-trigger-btn');
+    if (!btn) return;
+    let raf = null;
+    btn.addEventListener('mousemove', function (e) {
+      if (raf) cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(function () {
+        const r = btn.getBoundingClientRect();
+        btn.style.setProperty('--sx', ((e.clientX - r.left) / r.width  * 100).toFixed(1) + '%');
+        btn.style.setProperty('--sy', ((e.clientY - r.top)  / r.height * 100).toFixed(1) + '%');
+      });
+    });
+    btn.addEventListener('mouseleave', function () {
+      if (raf) cancelAnimationFrame(raf);
+      btn.style.setProperty('--sx', '30%');
+      btn.style.setProperty('--sy', '-20%');
+    });
+  }());
+  </script>
 </body>
 </html>

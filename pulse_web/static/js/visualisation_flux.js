@@ -452,7 +452,7 @@ qs("f-flux").addEventListener("change", () => {
 qs("btn-afficher").addEventListener("click", fetchAndRender);
 
 document.getElementById("btn-export-pdf")?.addEventListener("click", () => {
-  window.pulsePDF("Superposition multi-années — PULSE");
+  window.pulseChartPDF(null, "Superposition-multi-annees-PULSE");
 });
 
 document.getElementById("btn-export-excel")?.addEventListener("click", () => {
@@ -462,7 +462,7 @@ document.getElementById("btn-export-excel")?.addEventListener("click", () => {
     const flux    = qs("f-flux")?.value    || "Flux";
     window.pulseExcelChart(chart, `superposition_${section}_${flux}`);
   } else {
-    alert("Affichez d'abord un graphique.");
+    window.toast?.("Affichez d'abord un graphique.", "error");
   }
 });
 

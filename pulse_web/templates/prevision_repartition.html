@@ -1,295 +1,310 @@
 {% extends "base.html" %}
-
+{% set active_page = "prevision_repartition" %}
 {% block title %}Répartition par Profil{% endblock %}
+{% block breadcrumb %}Analyse · Répartition par profil{% endblock %}
 
 {% block head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <style>
-  .filters-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 16px;
-    align-items: end;
-  }
+/* ── LAYOUT ─────────────────────────────────────────────── */
+.visu-layout {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 0;
+  align-items: stretch;
+  min-height: calc(100vh - 160px);
+}
 
-  .filter-group {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-  }
+/* ── PANNEAU GAUCHE ──────────────────────────────────────── */
+.ctrl-panel {
+  background: #0e1420;
+  border-right: 1px solid rgba(255,255,255,.07);
+  border-radius: 16px 0 0 16px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: sticky;
+  top: 0;
+  max-height: calc(100vh - 100px);
+}
+.ctrl-header {
+  padding: 20px 20px 16px;
+  border-bottom: 1px solid rgba(255,255,255,.07);
+  background: rgba(76,124,243,.06);
+  flex-shrink: 0;
+}
+.ctrl-header-title { font-size: 13px; font-weight: 700; color: #F3F4F6; letter-spacing: .02em; }
+.ctrl-header-sub   { font-size: 11px; color: #64748B; margin-top: 3px; }
+.ctrl-body {
+  flex: 1;
+  padding: 18px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  overflow-y: auto;
+}
+.ctrl-group { display: flex; flex-direction: column; gap: 6px; }
+.ctrl-label {
+  font-size: 10px; font-weight: 700; color: #4C7CF3;
+  text-transform: uppercase; letter-spacing: .08em;
+}
+.ctrl-hint {
+  font-size: 10.5px; color: #475569; line-height: 1.5;
+  background: rgba(255,255,255,.02);
+  border: 1px solid rgba(255,255,255,.05);
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+.ctrl-footer {
+  padding: 14px 16px;
+  border-top: 1px solid rgba(255,255,255,.07);
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
 
-  .filter-group label {
-    font-size: 12px;
-    font-weight: 600;
-    color: #d1d5db;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-  }
+/* ── PANNEAU DROIT ───────────────────────────────────────── */
+.chart-panel {
+  background: #0a0e18;
+  border-radius: 0 16px 16px 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-width: 0;
+}
+.chart-topbar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 18px 24px 16px;
+  border-bottom: 1px solid rgba(255,255,255,.06);
+  background: rgba(255,255,255,.02);
+  flex-shrink: 0;
+}
+.chart-info-title { font-size: 16px; font-weight: 700; color: #F3F4F6; }
+.chart-info-sub   { font-size: 12px; color: #64748B; margin-top: 3px; }
+.charts-scroll {
+  flex: 1; overflow-y: auto; padding: 20px 24px 28px;
+  display: flex; flex-direction: column; gap: 20px;
+}
 
-  .filter-group select {
-    padding: 10px 12px;
-    background-color: #1a2230;
-    border: 1px solid #2b3647;
-    border-radius: 8px;
-    color: #f3f4f6;
-    font-size: 12px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-  }
+/* ── Conteneurs graphiques ───────────────────────────────── */
+.chart-container {
+  background: rgba(255,255,255,.02);
+  border: 1px solid rgba(255,255,255,.06);
+  border-radius: 12px;
+  padding: 0;
+  overflow: hidden;
+  margin-bottom: 0;
+}
+.chart-section-header {
+  padding: 14px 18px 12px;
+  border-bottom: 1px solid rgba(255,255,255,.05);
+}
+.chart-section-title {
+  font-size: 13px; font-weight: 700; color: #E2E8F0;
+}
+.chart-section-sub {
+  font-size: 11px; color: #475569; margin-top: 2px;
+}
+.chart-canvas-wrap {
+  padding: 16px 18px 18px;
+  height: 300px;
+  position: relative;
+}
+.chart-canvas-wrap canvas { width: 100% !important; height: 100% !important; }
 
-  .filter-group select:hover {
-    border-color: #556178;
-  }
+/* ── État loading ────────────────────────────────────────── */
+.state-loading-inner {
+  display: flex; align-items: center; justify-content: center;
+  gap: 14px; color: #64748B; font-size: 13px; padding: 48px 24px;
+}
+.loading-spinner {
+  display: inline-block;
+  width: 20px; height: 20px;
+  border: 2.5px solid rgba(76,124,243,.2);
+  border-top-color: #4C7CF3;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  flex-shrink: 0;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
 
-  .filter-group select:focus {
-    outline: none;
-    border-color: #4c7cf3;
-    box-shadow: 0 0 0 3px rgba(76, 124, 243, 0.1);
-  }
-
-  .chart-container {
-    background-color: #1a2230;
-    border: 1px solid #2b3647;
-    border-radius: 14px;
-    padding: 20px;
-    margin-bottom: 20px;
-    min-height: 500px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .chart-placeholder {
-    color: #7c8798;
-    text-align: center;
-    font-size: 14px;
-  }
-
-  .loading-spinner {
-    display: inline-block;
-    width: 24px;
-    height: 24px;
-    border: 3px solid rgba(76, 124, 243, 0.2);
-    border-top-color: #4c7cf3;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-  }
-
-  @keyframes spin {
-    to { transform: rotate(360deg); }
-  }
-
-  #chartRate {
-    width: 100%;
-    height: 100%;
-  }
-
-  #chartValue {
-    width: 100%;
-    height: 100%;
-  }
-
-  .table-section {
-    background-color: #1a2230;
-    border: 1px solid #2b3647;
-    border-radius: 14px;
-    padding: 20px;
-    overflow-x: auto;
-  }
-
-  .summary-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 12px;
-  }
-
-  .summary-table th {
-    background-color: #1d2634;
-    color: #f3f4f6;
-    font-weight: 600;
-    padding: 12px;
-    text-align: left;
-    border-bottom: 2px solid #2b3647;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-  }
-
-  .summary-table td {
-    padding: 12px;
-    border-bottom: 1px solid #2b3647;
-    color: #d1d5db;
-  }
-
-  .summary-table tr:hover {
-    background-color: rgba(76, 124, 243, 0.05);
-  }
-
-  .summary-table tr.total-row {
-    background-color: rgba(76, 124, 243, 0.1);
-    font-weight: 600;
-  }
-
-  .summary-table tr.total-row td {
-    border-top: 2px solid #4c7cf3;
-    border-bottom: 2px solid #4c7cf3;
-  }
-
-  .no-data {
-    text-align: center;
-    color: #7c8798;
-    padding: 40px 20px;
-    font-size: 14px;
-  }
-
-  .section-divider {
-    margin-top: 32px;
-    margin-bottom: 24px;
-  }
-
-  .section-title {
-    font-size: 18px;
-    font-weight: 600;
-    color: #f3f4f6;
-    margin-bottom: 8px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .section-subtitle {
-    font-size: 12px;
-    color: #9ca3af;
-    margin-bottom: 16px;
-  }
-
-  .loading-state {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 12px;
-    color: #7c8798;
-    font-size: 14px;
-  }
+/* ── Table ───────────────────────────────────────────────── */
+.table-wrap { overflow-x: auto; }
+.data-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.data-table th {
+  background: rgba(255,255,255,.03);
+  color: #94a3b8; font-weight: 600; font-size: 10.5px;
+  text-transform: uppercase; letter-spacing: .06em;
+  padding: 10px 14px;
+  border-bottom: 1px solid rgba(255,255,255,.07);
+  text-align: left;
+}
+.data-table th.num, .data-table td.num { text-align: right; }
+.data-table td {
+  padding: 10px 14px;
+  border-bottom: 1px solid rgba(255,255,255,.04);
+  color: #8896B0;
+}
+.data-table tr:hover td { background: rgba(76,124,243,.04); color: #CBD5E1; }
+.data-table tr.total-row td {
+  background: rgba(77,135,245,.08);
+  color: #7ab8ff; font-weight: 700;
+  border-top: 1px solid rgba(77,135,245,.2);
+  border-bottom: 1px solid rgba(77,135,245,.2);
+}
+.no-data {
+  text-align: center; color: #475569;
+  padding: 32px 20px; font-size: 13px;
+}
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="page-container">
-  <!-- PAGE HEADER -->
-  <div class="page-header">
-    <div class="header-text">
-      <span class="header-label">PROFILS</span>
-      <h1>Répartition des écarts par profil</h1>
-      <p class="header-description">
-        Analysez le taux d'écarts et la valorisation des écarts pour chaque profil,
-        par filiale et par année.
-      </p>
-    </div>
+
+<div class="page-header">
+  <div class="page-header-text">
+    <h1>Répartition par profil</h1>
+    <p class="subtitle">Taux d'écarts et valorisation par profil — filiale et année</p>
   </div>
-
-  <!-- FILTERS CARD -->
-  <div class="card">
-    <div class="card-header">
-      <span class="card-label">FILTRES</span>
-      <h3>Périmètre d'analyse</h3>
-      <p class="card-description">
-        Sélectionnez une filiale et une année pour recalculer automatiquement les graphiques et le tableau.
-      </p>
-    </div>
-
-    <div class="card-body">
-      <div class="filters-grid">
-        <div class="filter-group">
-          <label for="filterFiliale">Filiale</label>
-          <select id="filterFiliale">
-            <option>Toutes filiales</option>
-          </select>
-        </div>
-
-        <div class="filter-group">
-          <label for="filterAnnee">Année</label>
-          <select id="filterAnnee">
-            <option>Toutes années</option>
-          </select>
-        </div>
-
-        <div class="filter-group">
-          <label for="filterFlux">Flux</label>
-          <select id="filterFlux">
-            <option>Tous les flux</option>
-          </select>
-        </div>
-
-        <div class="filter-group">
-          <p style="font-size: 11px; color: #7c8798; margin-top: 24px;">
-            ℹ️ Le tri des profils suit l'ordre jour/mois détecté dans leur nom.
-          </p>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- CHART 1: TAUX D'ÉCARTS -->
-  <div class="section-divider">
-    <div class="section-title">📊 Taux d'écarts par profil</div>
-    <div class="section-subtitle">
-      Rapport entre le nombre d'écarts significatifs (≥40%) et le nombre de prévisions non vides.
-    </div>
-  </div>
-
-  <div class="chart-container" id="chart1Container">
-    <div class="chart-placeholder">
-      <div class="loading-state">
-        <div class="loading-spinner"></div>
-        Chargement des données...
-      </div>
-    </div>
-  </div>
-
-  <!-- CHART 2: VALORISATION -->
-  <div class="section-divider">
-    <div class="section-title">💰 Valorisation des écarts par profil</div>
-    <div class="section-subtitle">
-      Montant cumulé absolu des écarts en k€ pour chaque profil.
-    </div>
-  </div>
-
-  <div class="chart-container" id="chart2Container">
-    <div class="chart-placeholder">
-      <div class="loading-state">
-        <div class="loading-spinner"></div>
-        Chargement des données...
-      </div>
-    </div>
-  </div>
-
-  <!-- TABLE SECTION -->
-  <div class="section-divider">
-    <div class="section-title">📋 Synthèse par profil</div>
-    <div class="section-subtitle">
-      Vue consolidée du nombre de prévisions, du nombre d'écarts, du taux et de la valorisation.
-    </div>
-  </div>
-
-  <div class="table-section">
-    <table class="summary-table" id="summaryTable">
-      <thead>
-        <tr>
-          <th>Profil</th>
-          <th>Nb prévisions</th>
-          <th>Nb écarts ≥40%</th>
-          <th>Taux (%)</th>
-          <th>Valorisation (k€)</th>
-        </tr>
-      </thead>
-      <tbody id="tableBody">
-        <tr>
-          <td colspan="5" class="no-data">Chargement en cours...</td>
-        </tr>
-      </tbody>
-    </table>
+  <div class="page-header-actions">
+    <button class="btn btn--secondary btn--sm" id="btn-export-pdf">📄 PDF</button>
+    <button class="btn btn--secondary btn--sm" id="btn-export-excel" disabled>📊 Excel</button>
   </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+<div class="visu-layout">
+
+  <!-- ══════════════════════════════════════════
+       PANNEAU DE CONTRÔLE
+  ══════════════════════════════════════════ -->
+  <div class="ctrl-panel">
+
+    <div class="ctrl-header">
+      <div class="ctrl-header-title">Paramètres</div>
+      <div class="ctrl-header-sub">Filtrez l'analyse</div>
+    </div>
+
+    <div class="ctrl-body">
+
+      <div class="ctrl-group">
+        <div class="ctrl-label">Filiale</div>
+        <select class="filter-select" id="filterFiliale" style="width:100%;">
+          <option>Toutes filiales</option>
+        </select>
+      </div>
+
+      <div class="ctrl-group">
+        <div class="ctrl-label">Année</div>
+        <select class="filter-select" id="filterAnnee" style="width:100%;">
+          <option>Toutes années</option>
+        </select>
+      </div>
+
+      <div class="ctrl-group">
+        <div class="ctrl-label">Flux</div>
+        <select class="filter-select" id="filterFlux" style="width:100%;">
+          <option>Tous les flux</option>
+        </select>
+      </div>
+
+      <div class="ctrl-hint">
+        Le tri des profils suit l'ordre jour/mois détecté dans leur nom.
+      </div>
+
+    </div><!-- /ctrl-body -->
+
+    <div class="ctrl-footer">
+      <button class="btn btn--ghost btn--sm" id="btn-reset-filters" style="width:100%;justify-content:center;" title="Réinitialiser">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+        Réinitialiser
+      </button>
+      <button class="btn btn--primary" id="btn-analyser" style="width:100%;justify-content:center;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
+          <polyline points="17 6 23 6 23 12"/>
+        </svg>
+        Analyser
+      </button>
+    </div>
+
+  </div><!-- /ctrl-panel -->
+
+  <!-- ══════════════════════════════════════════
+       ZONE RÉSULTATS
+  ══════════════════════════════════════════ -->
+  <div class="chart-panel">
+
+    <div class="chart-topbar">
+      <div>
+        <div class="chart-info-title">Répartition par profil</div>
+        <div class="chart-info-sub">Taux d'écarts · Valorisation · Synthèse</div>
+      </div>
+    </div>
+
+    <div class="charts-scroll">
+
+      <!-- Graphique 1 : Taux d'écarts -->
+      <div class="chart-container" id="chart1Container">
+        <div class="chart-section-header">
+          <div class="chart-section-title">Taux d'écarts par profil</div>
+          <div class="chart-section-sub">Rapport écarts significatifs (≥ 40 %) / prévisions non vides</div>
+        </div>
+        <div class="chart-canvas-wrap">
+          <div class="state-loading-inner">
+            <div class="loading-spinner"></div>
+            Chargement des données…
+          </div>
+        </div>
+      </div>
+
+      <!-- Graphique 2 : Valorisation -->
+      <div class="chart-container" id="chart2Container">
+        <div class="chart-section-header">
+          <div class="chart-section-title">Valorisation des écarts par profil</div>
+          <div class="chart-section-sub">Montant cumulé absolu des écarts en k€</div>
+        </div>
+        <div class="chart-canvas-wrap">
+          <div class="state-loading-inner">
+            <div class="loading-spinner"></div>
+            Chargement des données…
+          </div>
+        </div>
+      </div>
+
+      <!-- Table synthèse -->
+      <div class="chart-container">
+        <div class="chart-section-header">
+          <div class="chart-section-title">Synthèse par profil</div>
+          <div class="chart-section-sub">Prévisions · Écarts · Taux · Valorisation</div>
+        </div>
+        <div class="table-wrap" style="padding: 0 4px 4px;">
+          <table class="data-table" id="summaryTable">
+            <thead>
+              <tr>
+                <th>Profil</th>
+                <th class="num">Nb prévisions</th>
+                <th class="num">Nb écarts ≥ 40 %</th>
+                <th class="num">Taux (%)</th>
+                <th class="num">Valorisation (k€)</th>
+              </tr>
+            </thead>
+            <tbody id="tableBody">
+              <tr><td colspan="5" class="no-data">Chargement en cours…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div><!-- /charts-scroll -->
+
+  </div><!-- /chart-panel -->
+
+</div><!-- /visu-layout -->
+
+{% endblock %}
+
+{% block scripts %}
 <script src="{{ url_for('static', filename='js/prevision_repartition.js') }}"></script>
 {% endblock %}

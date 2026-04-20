@@ -400,7 +400,7 @@ async function loadProfils() {
     document.getElementById("btn-analyser").addEventListener("click", analyser);
 
     document.getElementById("btn-export-pdf")?.addEventListener("click", () => {
-      window.pulsePDF("Répartition des écarts par flux — PULSE");
+      window.pulseChartPDF(null, "Repartition-ecarts-flux-PULSE");
     });
 
     document.getElementById("btn-export-excel")?.addEventListener("click", () => {
@@ -408,7 +408,7 @@ async function loadProfils() {
       if (chart) {
         window.pulseExcelChart(chart, "repartition_flux");
       } else {
-        alert("Lancez d'abord une analyse.");
+        window.toast?.("Lancez d'abord une analyse.", "error");
       }
     });
 

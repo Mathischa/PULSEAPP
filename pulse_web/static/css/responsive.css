@@ -1,0 +1,340 @@
+/* ================================================================
+   PULSE — Responsive Global Overrides
+   Chargé APRÈS {% block head %} pour surpasser les styles
+   inline des templates sans utiliser !important.
+   ================================================================ */
+
+/* ══════════════════════════════════════════════════════════════
+   BASE — Valeurs fluides, toutes tailles de fenêtre
+   ══════════════════════════════════════════════════════════════ */
+
+/* Content-shell : supprime la limite de largeur pour utiliser
+   tout l'espace disponible sur grands écrans */
+.content-shell {
+  max-width: 100%;
+}
+
+/* Padding fluide : scale de 12px (petit) à 28px (grand écran) */
+.content {
+  padding:
+    clamp(10px, 1.8vw, 28px)   /* top */
+    clamp(10px, 2.2vw, 32px)   /* droite/gauche */
+    clamp(18px, 3vw, 48px);    /* bas */
+}
+
+/* Sections internes : espacements fluides */
+.page-header {
+  margin-bottom: clamp(14px, 1.8vw, 28px);
+}
+
+.dashboard-hero {
+  padding: clamp(16px, 2.2vw, 32px) clamp(16px, 2.5vw, 36px);
+  margin-bottom: clamp(16px, 2vw, 28px);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   1280px — Grand écran avec sidebar ouverte
+   (sidebar 248px → zone contenu ≈ 1032px)
+   ══════════════════════════════════════════════════════════════ */
+@media (max-width: 1280px) {
+  /* ── Layout 2-col : collapse quand la sidebar est ouverte ── */
+  body:not(.sidebar-collapsed) .visu-layout,
+  body:not(.sidebar-collapsed) .ml-layout {
+    grid-template-columns: 1fr;
+    min-height: auto;
+  }
+
+  /* ── Panneau gauche : sortir du sticky quand empilé ─────── */
+  body:not(.sidebar-collapsed) .ctrl-panel,
+  body:not(.sidebar-collapsed) .ml-ctrl {
+    position: relative;
+    max-height: 300px;
+    border-radius: 14px 14px 0 0;
+    border-right: none;
+    border-bottom: 1px solid rgba(255,255,255,.07);
+  }
+
+  /* ── Panneau droit : radius inférieur uniquement ─────────── */
+  body:not(.sidebar-collapsed) .chart-panel,
+  body:not(.sidebar-collapsed) .ml-main {
+    border-radius: 0 0 14px 14px;
+  }
+
+  /* ── Accueil : nav-hub + reco en 2 colonnes ─────────────── */
+  body:not(.sidebar-collapsed) .nav-hub__grid,
+  body:not(.sidebar-collapsed) .reco-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  /* ── Import profils : col droite fixe 340px collapse ─────── */
+  body:not(.sidebar-collapsed) .ip-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   1200px — Fixes grilles internes (KPI rows, charts)
+   ══════════════════════════════════════════════════════════════ */
+@media (max-width: 1200px) {
+  /* ── ML Écarts : KPI row 4 cols → 2×2 ───────────────────── */
+  .ml-kpi-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  /* ── Flux : KPI row 4 cols → 2×2 ────────────────────────── */
+  .flux-kpi-row {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1px;
+  }
+
+  /* ── Répartition filiale : charts 2fr/1fr → 1fr ──────────── */
+  body:not(.sidebar-collapsed) .repartition-charts-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   1024px — Tablet / petit laptop : collapse total
+   ══════════════════════════════════════════════════════════════ */
+@media (max-width: 1024px) {
+
+  /* ── Layout 2-col → 1 col pour tous états sidebar ────────── */
+  .visu-layout,
+  .ml-layout {
+    grid-template-columns: 1fr;
+    min-height: auto;
+  }
+
+  /* ── Panneau gauche : non-sticky, empilé en haut ─────────── */
+  .ctrl-panel,
+  .ml-ctrl {
+    position: relative;
+    max-height: 300px;
+    border-radius: 14px 14px 0 0;
+    border-right: none;
+    border-bottom: 1px solid rgba(255,255,255,.07);
+  }
+
+  /* ── Panneau droit : radius bas uniquement ───────────────── */
+  .chart-panel,
+  .ml-main {
+    border-radius: 0 0 14px 14px;
+  }
+
+  /* ── Page header : wrap si trop long ────────────────────── */
+  .page-header {
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  /* ── Chart topbar / ml-topbar : début de wrap ───────────── */
+  .chart-topbar,
+  .ml-topbar {
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 14px 18px;
+  }
+
+  /* ── S3D (Clustering 3D) : panneau passe en haut ─────────── */
+  .s3d-layout {
+    flex-direction: column;
+  }
+  .s3d-panel {
+    width: 100%;
+    min-width: unset;
+    max-height: 300px;
+    overflow-y: auto;
+    border-right: none;
+    border-bottom: 1px solid rgba(255,255,255,.06);
+  }
+
+  /* ── Prévision : chart-container moins haut ─────────────── */
+  .chart-container {
+    min-height: 380px;
+  }
+
+  /* ── Visualisation : zone canvas moins haute ─────────────── */
+  .chart-area {
+    min-height: 380px;
+  }
+
+  /* ── ML Écarts + Flux : KPI rows → 2 colonnes ───────────── */
+  .ml-kpi-row,
+  .flux-kpi-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  /* ── Répartition filiale : grid charts → 1 colonne ─────── */
+  .repartition-charts-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* ── Import profils : col droite fixe → 1 colonne ────────── */
+  .ip-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   900px — Réductions supplémentaires
+   ══════════════════════════════════════════════════════════════ */
+@media (max-width: 900px) {
+  /* ── Dashboard hero : 1 colonne ──────────────────────────── */
+  .dashboard-hero {
+    grid-template-columns: 1fr;
+  }
+
+  /* ── Insights grid : 1 colonne ───────────────────────────── */
+  .insights-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   768px — Mobile
+   ══════════════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+
+  /* ── Panneaux gauche : hauteur réduite ──────────────────── */
+  .ctrl-panel,
+  .ml-ctrl {
+    max-height: 260px;
+  }
+
+  /* ── S3D panneau ──────────────────────────────────────────── */
+  .s3d-panel {
+    max-height: 260px;
+  }
+
+  /* ── Chart topbar / ml-topbar : empilé verticalement ────── */
+  .chart-topbar,
+  .ml-topbar {
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: flex-start;
+    gap: 10px;
+    padding: 12px 14px;
+  }
+
+  /* ── Charts scroll / ml-charts : padding réduit ─────────── */
+  .charts-scroll,
+  .ml-charts {
+    padding: 14px 14px 20px;
+  }
+
+  /* ── Page header : empilé verticalement ─────────────────── */
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  .page-header-actions {
+    flex-wrap: wrap;
+    width: 100%;
+    gap: 8px;
+  }
+  .page-header-text h1 { font-size: 18px; }
+
+  /* ── Accueil : grilles 1 colonne ─────────────────────────── */
+  .nav-hub__grid,
+  .reco-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* ── Header : masquer la date sur petit écran ────────────── */
+  .header-date { display: none; }
+
+  /* ── Prévision / chart container ────────────────────────── */
+  .chart-container { min-height: 300px; }
+
+  /* ── Visualisation : zone canvas ────────────────────────── */
+  .chart-area { min-height: 320px; }
+
+  /* ── KPI grids : 2 colonnes sur mobile ──────────────────── */
+  .kpi-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .stats-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  /* ── ML KPI row + Flux KPI row → 1 colonne ──────────────── */
+  .ml-kpi-row,
+  .flux-kpi-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  /* ── Répartition : charts en 1 col, canvas plus courts ──── */
+  .repartition-charts-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* ── Import profils : colonne droite sous le principal ───── */
+  .ip-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* ── Benchmarking : chart-cards empilés (déjà flex col) ──── */
+  .chart-card {
+    width: 100%;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   480px — Petit mobile
+   ══════════════════════════════════════════════════════════════ */
+@media (max-width: 480px) {
+
+  /* ── Panneaux gauche : encore plus réduits ───────────────── */
+  .ctrl-panel,
+  .ml-ctrl,
+  .s3d-panel {
+    max-height: 220px;
+  }
+
+  /* ── Titres plus petits ──────────────────────────────────── */
+  .page-header-text h1 { font-size: 16px; }
+
+  /* ── Filters bar : empilée ───────────────────────────────── */
+  .filters-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .filters-group {
+    width: 100%;
+  }
+
+  /* ── KPI et stats : 1 colonne ───────────────────────────── */
+  .kpi-grid {
+    grid-template-columns: 1fr;
+  }
+  .stats-row {
+    grid-template-columns: 1fr;
+  }
+
+  /* ── ML KPI + Flux KPI : 1 colonne ──────────────────────── */
+  .ml-kpi-row,
+  .flux-kpi-row {
+    grid-template-columns: 1fr;
+  }
+
+  /* ── Dashboard hero : padding réduit ────────────────────── */
+  .dashboard-hero {
+    padding: 16px;
+    gap: 12px;
+  }
+  .dashboard-hero__title { font-size: 22px; }
+
+  /* ── Prévision / chart container ────────────────────────── */
+  .chart-container { min-height: 260px; }
+  .chart-area      { min-height: 280px; }
+
+  /* ── Chart topbar / ml-topbar : padding minimal ─────────── */
+  .chart-topbar,
+  .ml-topbar {
+    padding: 10px 12px;
+  }
+}

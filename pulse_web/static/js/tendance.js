@@ -119,16 +119,26 @@ async function loadCatalogue() {
   document.getElementById("f-flux").addEventListener("change", checkReady);
   document.getElementById("btn-analyser").addEventListener("click", analyser);
 
+  /* Reset filtres */
+  document.getElementById("btn-reset-filters")?.addEventListener("click", () => {
+    selSection.selectedIndex = 0;
+    const selFlux = document.getElementById("f-flux");
+    if (selFlux) { selFlux.innerHTML = '<option value="">— sélectionner une section d\'abord —</option>'; selFlux.disabled = true; }
+    document.getElementById("f-annee").selectedIndex = 0;
+    document.getElementById("btn-analyser").disabled = true;
+    window.toast?.("Filtres réinitialisés", "info");
+  });
+
   /* Export PDF */
   document.getElementById("btn-export-pdf")?.addEventListener("click", () => {
-    window.pulsePDF("Tendance flux — PULSE");
+    window.pulseChartPDF(null, "Tendance-flux-PULSE");
   });
 
   /* Export Excel : exporte les données de la première série (dates + réels) */
   document.getElementById("btn-export-excel")?.addEventListener("click", () => {
     const btnExcel = document.getElementById("btn-export-excel");
     const body = btnExcel?._tendanceBody;
-    if (!body) { alert("Lancez d'abord une analyse."); return; }
+    if (!body) { window.toast?.("Lancez d'abord une analyse.", "error"); return; }
 
     const section = document.getElementById("f-section")?.value || "Section";
     const flux    = document.getElementById("f-flux")?.value    || "Flux";
@@ -141,7 +151,7 @@ async function loadCatalogue() {
       const rows = body.dates.map((d, i) => [d, body.reel[i] ?? ""]);
       window.pulseExcelData(headers, rows, `tendance_${section}_${flux}`);
     } else {
-      alert("Aucune donnée à exporter.");
+      window.toast?.("Aucune donnée à exporter.", "error");
     }
   });
 }

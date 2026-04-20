@@ -338,7 +338,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Export PDF
   document.getElementById("btn-export-pdf")?.addEventListener("click", () => {
-    window.pulsePDF("Répartition par filiale — PULSE");
+    window.pulseChartPDF(null, "Repartition-filiale-PULSE");
   });
 
   // Export Excel
@@ -357,8 +357,15 @@ document.addEventListener('DOMContentLoaded', () => {
       ]);
       window.pulseExcelData(headers, rows, "repartition_filiale");
     } else {
-      alert("Aucune donnée à exporter.");
+      window.toast?.("Aucune donnée à exporter.", "error");
     }
+  });
+
+  // Reset filtres
+  document.getElementById("btn-reset-filters")?.addEventListener("click", () => {
+    document.getElementById("f-annee").selectedIndex = 0;
+    updateData();
+    window.toast?.("Filtres réinitialisés", "info");
   });
 
   // Initial load

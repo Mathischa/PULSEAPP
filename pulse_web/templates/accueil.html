@@ -9,7 +9,9 @@
 
 {% block content %}
 
-<!-- HERO SECTION PREMIUM -->
+
+
+<!-- HERO SECTION -->
 <div class="dashboard-hero">
   <div class="hero-orb hero-orb--1"></div>
   <div class="hero-orb hero-orb--2"></div>
@@ -18,24 +20,24 @@
   <div class="dashboard-hero__content">
     <div class="dashboard-hero__eyebrow">
       <span class="eyebrow-dot"></span>
-      PULSE · DCF Groupe — Supervision opérationnelle
+      PULSE · DCF Groupe — Hub d'aide à la décision
     </div>
 
     <h1 class="dashboard-hero__title">Tableau de Bord</h1>
 
     <p class="dashboard-hero__subtitle">
-      Visibilité temps réel sur les données PULSE en mémoire —
-      fichiers chargés, sections couvertes, état du cache et synchronisation système.
+      Voici ce qui mérite votre attention aujourd'hui —
+      signaux prioritaires, recommandations d'analyse et accès direct aux modules.
     </p>
 
     <div class="dashboard-hero__meta">
       <div class="hero-stat">
         <span class="hero-stat__label">Mode</span>
-        <span class="hero-stat__value">Analyse temps réel</span>
+        <span class="hero-stat__value">Aide à la décision</span>
       </div>
       <div class="hero-stat">
-        <span class="hero-stat__label">Environnement</span>
-        <span class="hero-stat__value">Production</span>
+        <span class="hero-stat__label">Périmètre</span>
+        <span class="hero-stat__value" id="hero-perimeter">—</span>
       </div>
       <div class="hero-stat">
         <span class="hero-stat__label">Statut système</span>
@@ -47,12 +49,12 @@
     </div>
   </div>
 
-  <!-- HERO PANEL — droite enrichi -->
+  <!-- HERO PANEL -->
   <div class="dashboard-hero__panel">
     <div class="hero-panel-card">
-      <div class="hero-panel-card__eyebrow">FICHIERS EN MÉMOIRE</div>
+      <div class="hero-panel-card__eyebrow">DONNÉES EN MÉMOIRE</div>
       <div class="hero-panel-card__value" id="hero-total-files">—</div>
-      <div class="hero-panel-card__subtitle">Documents actifs chargés</div>
+      <div class="hero-panel-card__subtitle">Fichiers mensuels chargés</div>
 
       <div class="hero-panel-card__divider"></div>
 
@@ -68,24 +70,22 @@
         </div>
       </div>
 
-      <div class="hero-panel-card__accent"></div>
+      <canvas id="hero-hist-canvas"  class="hero-panel-card__hist"   aria-hidden="true"></canvas>
+      <canvas id="hero-chart-canvas" class="hero-panel-card__accent" aria-hidden="true"></canvas>
     </div>
   </div>
 </div>
 
 <!-- LOADING STATE -->
 <div id="loading">
+  <div class="signal-bar-skeleton">
+    <div class="skeleton" style="height:52px;border-radius:14px;"></div>
+  </div>
   <div class="kpi-grid">
     <div class="skeleton skeleton-kpi"></div>
     <div class="skeleton skeleton-kpi"></div>
     <div class="skeleton skeleton-kpi"></div>
     <div class="skeleton skeleton-kpi"></div>
-  </div>
-  <div class="stats-row" style="margin-top:0; margin-bottom:0;">
-    <div class="skeleton skeleton-stat"></div>
-    <div class="skeleton skeleton-stat"></div>
-    <div class="skeleton skeleton-stat"></div>
-    <div class="skeleton skeleton-stat"></div>
   </div>
   <div class="card-grid" style="margin-top:16px;">
     <div class="skeleton skeleton-card-sm"></div>
@@ -97,10 +97,12 @@
 <!-- MAIN DASHBOARD -->
 <div id="dashboard" hidden>
 
-  <!-- KPI GRID -->
+  <!-- ── SIGNAL BAR ── -->
+  <div class="signal-bar" id="signal-bar" aria-label="Signaux prioritaires"></div>
+
+  <!-- ── KPI GRID ── -->
   <div class="kpi-grid">
 
-    <!-- KPI 1: Fichiers -->
     <div class="kpi-card kpi-card--blue" data-index="0">
       <div class="kpi-card__inner">
         <div class="kpi-card__header">
@@ -115,11 +117,11 @@
         </div>
         <div class="kpi-value" id="kpi-fichiers">—</div>
         <div class="kpi-label">Fichiers mensuels</div>
+        <div class="kpi-context" id="kpi-fichiers-ctx"></div>
         <div class="kpi-card__glow"></div>
       </div>
     </div>
 
-    <!-- KPI 2: MAJ -->
     <div class="kpi-card kpi-card--green" data-index="1">
       <div class="kpi-card__inner">
         <div class="kpi-card__header">
@@ -130,15 +132,15 @@
               <polyline points="12 6 12 12 16 14"/>
             </svg>
           </div>
-          <span class="badge badge--green badge--sm">Sync</span>
+          <span class="badge badge--sm" id="kpi-maj-badge">Sync</span>
         </div>
         <div class="kpi-value kpi-value--sm" id="kpi-maj">—</div>
         <div class="kpi-label">Dernière mise à jour</div>
+        <div class="kpi-context" id="kpi-maj-ctx"></div>
         <div class="kpi-card__glow"></div>
       </div>
     </div>
 
-    <!-- KPI 3: Sections -->
     <div class="kpi-card kpi-card--purple" data-index="2">
       <div class="kpi-card__inner">
         <div class="kpi-card__header">
@@ -151,72 +153,230 @@
               <rect x="3" y="14" width="7" height="7"/>
             </svg>
           </div>
-          <span class="badge badge--purple badge--sm">Coverage</span>
+          <span class="badge badge--purple badge--sm">Périmètre</span>
         </div>
         <div class="kpi-value" id="kpi-sections">—</div>
-        <div class="kpi-label">Sections analysées</div>
+        <div class="kpi-label">Sections couvertes</div>
+        <div class="kpi-context" id="kpi-sections-ctx"></div>
         <div class="kpi-card__glow"></div>
       </div>
     </div>
 
-    <!-- KPI 4: Cache -->
     <div class="kpi-card kpi-card--orange" data-index="3">
       <div class="kpi-card__inner">
         <div class="kpi-card__header">
           <div class="kpi-icon kpi-icon--orange">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"
                  stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <ellipse cx="12" cy="5" rx="9" ry="3"/>
-              <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/>
-              <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>
+              <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
             </svg>
           </div>
-          <span class="badge badge--gray badge--sm">Cache</span>
+          <span class="badge badge--gray badge--sm">Historique</span>
         </div>
-        <div class="kpi-value" id="kpi-cache">—</div>
-        <div class="kpi-label">Séries en cache</div>
+        <div class="kpi-value" id="kpi-annees">—</div>
+        <div class="kpi-label">Années disponibles</div>
+        <div class="kpi-context" id="kpi-annees-ctx"></div>
         <div class="kpi-card__glow"></div>
       </div>
     </div>
 
   </div>
 
-  <!-- STATS ROW -->
-  <div class="stats-row">
-    <div class="stat-item stat-item--years" data-index="0">
-      <div class="stat-value" id="stat-annees">—</div>
-      <div class="stat-label">Années disponibles</div>
+  <!-- ── NAVIGATION HUB ── -->
+  <div class="nav-hub">
+    <div class="nav-hub__header">
+      <div class="nav-hub__title">Que voulez-vous analyser ?</div>
+      <div class="nav-hub__sub">Accès direct aux modules d'analyse PULSE</div>
     </div>
-    <div class="stat-item stat-item--filiales" data-index="1">
-      <div class="stat-value" id="stat-filiales">—</div>
-      <div class="stat-label">Filiales détectées</div>
+    <div class="nav-hub__grid">
+
+      <a href="/tendance" class="pulse-module pulse-module--blue">
+        <div class="pulse-module__header">
+          <div class="pulse-module__eyebrow">Analyse · Tendances</div>
+          <h3 class="pulse-module__title">Tendances des flux</h3>
+          <p class="pulse-module__desc">Évolutions temporelles sur vos données historiques multi-années</p>
+        </div>
+        <div class="pulse-module__preview">
+          <img src="{{ url_for('static', filename='img/page_tendance.png') }}" class="pulse-module__img" alt="Tendances des flux">
+          <div class="pulse-module__overlay">
+            <div class="pulse-module__cta">
+              <span>Ouvrir le module</span>
+              <svg class="pulse-module__cta-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </div>
+          </div>
+        </div>
+        <div class="pulse-module__footer">
+          <span class="pulse-module__footer-label">Explorer la data</span>
+          <div class="pulse-module__footer-dot"></div>
+        </div>
+      </a>
+
+      <a href="/visualisation_flux" class="pulse-module pulse-module--violet">
+        <div class="pulse-module__header">
+          <div class="pulse-module__eyebrow">Analyse · Comparaison</div>
+          <h3 class="pulse-module__title">Superposition des données</h3>
+          <p class="pulse-module__desc">Superposez réel et prévision pour déceler les tendances cachées</p>
+        </div>
+        <div class="pulse-module__preview">
+          <img src="{{ url_for('static', filename='img/page_superposition.png') }}" class="pulse-module__img" alt="Superposition des données">
+          <div class="pulse-module__overlay">
+            <div class="pulse-module__cta">
+              <span>Ouvrir le module</span>
+              <svg class="pulse-module__cta-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </div>
+          </div>
+        </div>
+        <div class="pulse-module__footer">
+          <span class="pulse-module__footer-label">Explorer la data</span>
+          <div class="pulse-module__footer-dot"></div>
+        </div>
+      </a>
+
+      <a href="/ml_ecarts" class="pulse-module pulse-module--emerald">
+        <div class="pulse-module__header">
+          <div class="pulse-module__eyebrow">Machine Learning · Clustering</div>
+          <h3 class="pulse-module__title">Clusterisation des écarts</h3>
+          <p class="pulse-module__desc">Algorithmes de clustering pour classifier les déviations automatiquement</p>
+        </div>
+        <div class="pulse-module__preview">
+          <img src="{{ url_for('static', filename='img/page_ml_ecarts.png') }}" class="pulse-module__img" alt="Clusterisation des écarts">
+          <div class="pulse-module__overlay">
+            <div class="pulse-module__cta">
+              <span>Ouvrir le module</span>
+              <svg class="pulse-module__cta-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </div>
+          </div>
+        </div>
+        <div class="pulse-module__footer">
+          <span class="pulse-module__footer-label">Explorer la data</span>
+          <div class="pulse-module__footer-dot"></div>
+        </div>
+      </a>
+
     </div>
-    <div class="stat-item stat-item--recents" data-index="2">
-      <div class="stat-value" id="stat-recents">—</div>
-      <div class="stat-label">Fichiers récents</div>
-    </div>
-    <div class="stat-item stat-item--health" data-index="3">
-      <div class="stat-value stat-value--ok" id="stat-health">—</div>
-      <div class="stat-label">Santé système</div>
+
+    <!-- ── MODULES SECONDAIRES ── -->
+    <div class="nav-hub__divider">Tous les modules</div>
+    <div class="nav-hub__compact-grid">
+
+      <a href="/ecarts" class="hub-card hub-card--orange">
+        <div class="hub-card__icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        </div>
+        <div class="hub-card__body">
+          <div class="hub-card__title">Analyse des écarts</div>
+          <div class="hub-card__desc">Réel vs prévision par filiale</div>
+        </div>
+        <div class="hub-card__arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg></div>
+      </a>
+
+      <a href="/heatmap" class="hub-card hub-card--blue">
+        <div class="hub-card__icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+        </div>
+        <div class="hub-card__body">
+          <div class="hub-card__title">Heatmap</div>
+          <div class="hub-card__desc">Intensité des volumes par mois</div>
+        </div>
+        <div class="hub-card__arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg></div>
+      </a>
+
+      <a href="/heatmap_ecarts" class="hub-card hub-card--purple">
+        <div class="hub-card__icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><line x1="12" y1="2" x2="12" y2="22"/></svg>
+        </div>
+        <div class="hub-card__body">
+          <div class="hub-card__title">Heatmap des écarts</div>
+          <div class="hub-card__desc">Déviations visuelles par période</div>
+        </div>
+        <div class="hub-card__arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg></div>
+      </a>
+
+      <a href="/repartition" class="hub-card hub-card--green">
+        <div class="hub-card__icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>
+        </div>
+        <div class="hub-card__body">
+          <div class="hub-card__title">Répartition</div>
+          <div class="hub-card__desc">Ventilation des flux par filiale</div>
+        </div>
+        <div class="hub-card__arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg></div>
+      </a>
+
+      <a href="/repartition_flux" class="hub-card hub-card--teal">
+        <div class="hub-card__icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+        </div>
+        <div class="hub-card__body">
+          <div class="hub-card__title">Répartition des flux</div>
+          <div class="hub-card__desc">Flux inter-filiales</div>
+        </div>
+        <div class="hub-card__arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg></div>
+      </a>
+
+      <a href="/prevision_repartition" class="hub-card hub-card--orange">
+        <div class="hub-card__icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><polyline points="8 14 10 16 16 12"/></svg>
+        </div>
+        <div class="hub-card__body">
+          <div class="hub-card__title">Prévision répartition</div>
+          <div class="hub-card__desc">Projection de la répartition</div>
+        </div>
+        <div class="hub-card__arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg></div>
+      </a>
+
+      <a href="/benchmarking" class="hub-card hub-card--red">
+        <div class="hub-card__icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+        </div>
+        <div class="hub-card__body">
+          <div class="hub-card__title">Benchmarking</div>
+          <div class="hub-card__desc">Comparaison des performances</div>
+        </div>
+        <div class="hub-card__arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg></div>
+      </a>
+
+      <a href="/clustering_3d" class="hub-card hub-card--purple">
+        <div class="hub-card__icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="7" cy="7" r="2"/><circle cx="17" cy="7" r="2"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/><circle cx="12" cy="12" r="3"/></svg>
+        </div>
+        <div class="hub-card__body">
+          <div class="hub-card__title">Clustering 3D</div>
+          <div class="hub-card__desc">Groupement spatial des patterns</div>
+        </div>
+        <div class="hub-card__arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg></div>
+      </a>
+
+      <a href="/visualisation" class="hub-card hub-card--blue">
+        <div class="hub-card__icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        </div>
+        <div class="hub-card__body">
+          <div class="hub-card__title">Visualisation</div>
+          <div class="hub-card__desc">Vue consolidée des données</div>
+        </div>
+        <div class="hub-card__arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg></div>
+      </a>
+
     </div>
   </div>
 
-  <!-- CONTENT CARDS GRID -->
+  <!-- ── CARD GRID ── -->
   <div class="card-grid" style="margin-top:20px;">
 
-    <!-- CARD 1: Années -->
+    <!-- Années -->
     <div class="card card--premium" data-index="0">
       <div class="card__header">
         <div>
           <div class="card__title">Années disponibles</div>
-          <div class="card__subtitle">Période couverte par les données</div>
+          <div class="card__subtitle">Période couverte</div>
         </div>
         <span id="annees-count" class="badge badge--blue">—</span>
       </div>
       <div id="annees-badges" class="badges-wrap"></div>
     </div>
 
-    <!-- CARD 2: Sections / Filiales -->
+    <!-- Sections -->
     <div class="card card--premium" data-index="1">
       <div class="card__header">
         <div>
@@ -228,66 +388,8 @@
       <div id="sections-chips" class="chips-wrap chips-wrap--grid"></div>
     </div>
 
-    <!-- CARD 3: Insights (span 2) -->
+    <!-- Table fichiers récents (span 2) -->
     <div class="card card--premium card--span2" data-index="2">
-      <div class="card__header card__header--large">
-        <div>
-          <div class="card__title">Lecture stratégique</div>
-          <div class="card__subtitle">Indicateurs clés de monitoring</div>
-        </div>
-        <span class="badge badge--purple">Insights</span>
-      </div>
-
-      <div class="insights-grid">
-
-        <div class="insight-box">
-          <div class="insight-box__icon insight-box__icon--blue">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"
-                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-              <line x1="16" y1="2" x2="16" y2="6"/>
-              <line x1="8" y1="2" x2="8" y2="6"/>
-              <line x1="3" y1="10" x2="21" y2="10"/>
-            </svg>
-          </div>
-          <div class="insight-box__label">Dernière activité</div>
-          <div class="insight-box__value" id="insight-last-update">—</div>
-          <div class="insight-box__desc">Dernier point de synchronisation identifié</div>
-        </div>
-
-        <div class="insight-box">
-          <div class="insight-box__icon insight-box__icon--purple">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"
-                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M12 2L2 7l10 5 10-5-10-5z"/>
-              <path d="M2 17l10 5 10-5"/>
-              <path d="M2 12l10 5 10-5"/>
-            </svg>
-          </div>
-          <div class="insight-box__label">Périmètre couvert</div>
-          <div class="insight-box__value" id="insight-coverage">—</div>
-          <div class="insight-box__desc">Nombre de sections actuellement analysées</div>
-        </div>
-
-        <div class="insight-box">
-          <div class="insight-box__icon insight-box__icon--green">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"
-                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <ellipse cx="12" cy="5" rx="9" ry="3"/>
-              <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/>
-              <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>
-            </svg>
-          </div>
-          <div class="insight-box__label">Capacité cache</div>
-          <div class="insight-box__value" id="insight-cache">—</div>
-          <div class="insight-box__desc">Séries stockées pour accès rapide</div>
-        </div>
-
-      </div>
-    </div>
-
-    <!-- CARD 4: Table Fichiers (span 2) -->
-    <div class="card card--premium card--span2" data-index="3">
       <div class="card__header card__header--large">
         <div>
           <div class="card__title">Fichiers les plus récents</div>
@@ -331,47 +433,6 @@
           </thead>
           <tbody id="fichiers-tbody"></tbody>
         </table>
-      </div>
-    </div>
-
-    <!-- CARD 5: État mémoire -->
-    <div class="card card--premium" data-index="4">
-      <div class="card__header">
-        <div>
-          <div class="card__title">État de la mémoire</div>
-          <div class="card__subtitle">Snapshot système live</div>
-        </div>
-        <span class="badge badge--green">Live</span>
-      </div>
-
-      <div class="system-list">
-        <div class="system-row">
-          <span class="system-row__label">Cache applicatif</span>
-          <span class="system-row__value" id="sys-cache">—</span>
-        </div>
-        <div class="system-row">
-          <span class="system-row__label">Dernière synchronisation</span>
-          <span class="system-row__value" id="sys-sync">—</span>
-        </div>
-        <div class="system-row">
-          <span class="system-row__label">Couverture fonctionnelle</span>
-          <span class="system-row__value" id="sys-sections">—</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- CARD 6: Résumé opérationnel -->
-    <div class="card card--premium" data-index="5">
-      <div class="card__header">
-        <div>
-          <div class="card__title">Résumé opérationnel</div>
-          <div class="card__subtitle">Vue consolidée du dataset</div>
-        </div>
-        <span class="badge badge--blue">Résumé</span>
-      </div>
-
-      <div class="summary-box" id="resume-operationnel">
-        Données en attente de chargement…
       </div>
     </div>
 

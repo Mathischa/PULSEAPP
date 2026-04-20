@@ -1,0 +1,374 @@
+{% extends "base.html" %}
+{% set active_page = "clustering_3d" %}
+{% set page_fullscreen = true %}
+{% block title %}Surface 3D Performance{% endblock %}
+{% block breadcrumb %}IA · Surface 3D{% endblock %}
+
+{% block head %}
+<style>
+/* ── Layout plein écran ───────────────────────────────────────────── */
+.s3d-layout {
+  display: flex;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* Panel gauche */
+.s3d-panel {
+  width: 272px;
+  min-width: 252px;
+  background: rgba(10,14,28,0.97);
+  border-right: 1px solid rgba(255,255,255,0.06);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(60,80,160,0.4) transparent;
+  z-index: 2;
+}
+.s3d-panel::-webkit-scrollbar { width: 4px; }
+.s3d-panel::-webkit-scrollbar-thumb { background: rgba(60,80,160,0.4); border-radius: 2px; }
+
+.s3d-section {
+  padding: 16px 16px 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.s3d-section:last-child { border-bottom: none; }
+.s3d-section-title {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(148,163,184,0.6);
+  margin-bottom: 10px;
+}
+
+/* Filtres */
+.s3d-filter-row { margin-bottom: 10px; }
+.s3d-filter-label { font-size: 11px; color: #94A3B8; margin-bottom: 4px; display: block; }
+.s3d-select {
+  width: 100%;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: #E2E8F0;
+  font-size: 12px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%2394A3B8'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+}
+.s3d-select:focus { outline: none; border-color: rgba(59,130,246,0.5); }
+
+/* Boutons action */
+.s3d-btn-row { display: flex; gap: 6px; margin-top: 2px; }
+.s3d-btn {
+  flex: 1;
+  padding: 7px 8px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.10);
+  color: rgba(203,213,225,0.85);
+  font-size: 10.5px;
+  font-weight: 600;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.18s, border-color 0.18s, color 0.18s;
+  font-family: Inter, sans-serif;
+  text-align: center;
+  white-space: nowrap;
+}
+.s3d-btn:hover {
+  background: rgba(255,255,255,0.09);
+  border-color: rgba(255,255,255,0.22);
+  color: #E2E8F0;
+}
+.s3d-btn[data-active="true"] {
+  background: rgba(239,68,68,0.14);
+  border-color: rgba(239,68,68,0.35);
+  color: rgba(252,165,165,0.95);
+}
+.s3d-btn-rotate { flex: 1.4; }
+.s3d-btn-fs { flex: 1; }
+
+/* KPI grid */
+.s3d-kpi-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.s3d-kpi {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 8px;
+  padding: 10px 12px;
+  text-align: center;
+}
+.s3d-kpi-val {
+  font-size: 18px;
+  font-weight: 700;
+  color: #E2E8F0;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.s3d-kpi-lbl {
+  font-size: 9.5px;
+  color: #64748B;
+  margin-top: 3px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.s3d-kpi.full { grid-column: 1 / -1; }
+
+/* Insight rows */
+.s3d-insight-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  font-size: 11px;
+}
+.s3d-insight-row:last-child { border-bottom: none; }
+.s3d-insight-icon { font-size: 14px; width: 20px; text-align: center; flex-shrink: 0; }
+.s3d-insight-body { flex: 1; min-width: 0; }
+.s3d-insight-label { color: #64748B; font-size: 10px; margin-bottom: 1px; }
+.s3d-insight-val { color: #E2E8F0; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* Canvas area */
+.s3d-canvas-area {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  background: rgb(6,10,20);
+}
+#s3d-plotly {
+  width: 100%;
+  height: 100%;
+  transition: opacity 0.35s ease;
+  background: rgb(6,10,20) !important;
+}
+/* Forcer fond sombre Plotly */
+#s3d-plotly .js-plotly-plot,
+#s3d-plotly .plot-container,
+#s3d-plotly .svg-container,
+#s3d-plotly canvas { background: rgb(6,10,20) !important; }
+
+/* Plein écran : le canvas prend tout l'espace */
+.s3d-canvas-area:fullscreen { background: rgb(6,10,20); }
+.s3d-canvas-area:fullscreen #s3d-plotly { height: 100vh; }
+
+/* Loading */
+.s3d-loading {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  background: rgba(6,10,20,0.92);
+  z-index: 200;
+  gap: 14px;
+  backdrop-filter: blur(4px);
+}
+.s3d-loading-ring {
+  width: 44px; height: 44px;
+  border: 3px solid rgba(59,130,246,0.15);
+  border-top-color: #3B82F6;
+  border-radius: 50%;
+  animation: s3d-spin 0.8s linear infinite;
+}
+@keyframes s3d-spin { to { transform: rotate(360deg); } }
+.s3d-loading-text { font-size: 12px; color: #64748B; }
+
+/* Empty */
+.s3d-empty {
+  position: absolute; inset: 0;
+  display: none; flex-direction: column; align-items: center; justify-content: center;
+  color: #475569; gap: 12px;
+}
+.s3d-empty svg { opacity: 0.25; }
+.s3d-empty-text { font-size: 13px; }
+
+/* Aide lecture */
+.s3d-reading-guide { font-size: 10.5px; color: #475569; line-height: 1.7; }
+.s3d-reading-guide span { font-weight: 600; }
+.s3d-guide-dot {
+  display: inline-block;
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  margin-right: 5px;
+  vertical-align: middle;
+}
+
+/* Badge légende */
+.s3d-legend-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 9.5px;
+  color: #64748B;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 4px;
+  padding: 3px 7px;
+  margin: 2px 2px 2px 0;
+}
+.s3d-legend-badge span { color: #94A3B8; font-weight: 600; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="s3d-layout">
+
+  <!-- ── Panel gauche ──────────────────────────────── -->
+  <aside class="s3d-panel">
+
+    <!-- Filtres -->
+    <div class="s3d-section">
+      <div class="s3d-section-title">Filtres</div>
+
+      <div class="s3d-filter-row">
+        <label class="s3d-filter-label">Année</label>
+        <select class="s3d-select" id="f-annee"><option value="">Toutes</option></select>
+      </div>
+
+      <div class="s3d-filter-row">
+        <label class="s3d-filter-label">Filiale</label>
+        <select class="s3d-select" id="f-filiale"><option value="">Toutes</option></select>
+      </div>
+
+      <div class="s3d-filter-row">
+        <label class="s3d-filter-label">Type de flux</label>
+        <select class="s3d-select" id="f-flux-type">
+          <option value="">Tous</option>
+          <option value="enc">Encaissements</option>
+          <option value="dec">Décaissements</option>
+        </select>
+      </div>
+
+      <div class="s3d-filter-row">
+        <label class="s3d-filter-label">Métrique</label>
+        <select class="s3d-select" id="f-metrique">
+          <option value="perf">Performance (écart favorab.)</option>
+          <option value="reel">Volume réel (k€)</option>
+          <option value="precision">Précision des prévisions</option>
+        </select>
+      </div>
+
+      <!-- Actions caméra -->
+      <div class="s3d-btn-row">
+        <button class="s3d-btn s3d-btn-rotate" id="btn-rotate" onclick="toggleRotate()" data-active="false">▶ Rotation auto</button>
+        <button class="s3d-btn s3d-btn-fs"     id="btn-fs"     onclick="toggleFullscreen()">⊞ Plein écran</button>
+      </div>
+    </div>
+
+    <!-- KPIs -->
+    <div class="s3d-section">
+      <div class="s3d-section-title">Vue d'ensemble</div>
+      <div class="s3d-kpi-grid">
+        <div class="s3d-kpi full">
+          <div class="s3d-kpi-val" id="kpi-perf">—</div>
+          <div class="s3d-kpi-lbl">Perf. globale moy.</div>
+        </div>
+        <div class="s3d-kpi">
+          <div class="s3d-kpi-val" id="kpi-total">—</div>
+          <div class="s3d-kpi-lbl">Observations</div>
+        </div>
+        <div class="s3d-kpi">
+          <div class="s3d-kpi-val" id="kpi-n-fil">—</div>
+          <div class="s3d-kpi-lbl">Filiales</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Points saillants -->
+    <div class="s3d-section">
+      <div class="s3d-section-title">Points saillants</div>
+
+      <div class="s3d-insight-row">
+        <div class="s3d-insight-icon" style="color:#10B981;">▲</div>
+        <div class="s3d-insight-body">
+          <div class="s3d-insight-label">Meilleure filiale</div>
+          <div class="s3d-insight-val" id="kpi-best-fil">—</div>
+        </div>
+      </div>
+
+      <div class="s3d-insight-row">
+        <div class="s3d-insight-icon" style="color:#EF4444;">▼</div>
+        <div class="s3d-insight-body">
+          <div class="s3d-insight-label">Filiale à surveiller</div>
+          <div class="s3d-insight-val" id="kpi-worst-fil">—</div>
+        </div>
+      </div>
+
+      <div class="s3d-insight-row">
+        <div class="s3d-insight-icon" style="color:#10B981;">◆</div>
+        <div class="s3d-insight-body">
+          <div class="s3d-insight-label">Meilleur mois</div>
+          <div class="s3d-insight-val" id="kpi-best-mois">—</div>
+        </div>
+      </div>
+
+      <div class="s3d-insight-row">
+        <div class="s3d-insight-icon" style="color:#F59E0B;">◆</div>
+        <div class="s3d-insight-body">
+          <div class="s3d-insight-label">Mois le plus difficile</div>
+          <div class="s3d-insight-val" id="kpi-worst-mois">—</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Guide lecture -->
+    <div class="s3d-section" style="flex:1;">
+      <div class="s3d-section-title">Guide de lecture</div>
+      <div class="s3d-reading-guide">
+        <div>La surface montre la <span>performance moyenne</span> de chaque filiale mois par mois. Les isolignes révèlent les gradients de performance.</div>
+        <br>
+        <div>
+          <span class="s3d-guide-dot" style="background:#10B981;"></span><span>Vert</span> = favorable<br>
+          <span class="s3d-guide-dot" style="background:#EF4444;"></span><span>Rouge</span> = défavorable<br>
+          <span class="s3d-guide-dot" style="background:#334155;"></span><span>Neutre</span> = ≈ 0%
+        </div>
+        <br>
+        <div style="display:flex;flex-wrap:wrap;gap:3px;">
+          <div class="s3d-legend-badge">● <span>Vert/Rouge</span> = sommets</div>
+          <div class="s3d-legend-badge">— <span>Plan gris</span> = équilibre 0%</div>
+          <div class="s3d-legend-badge">≈ <span>Isolignes</span> = contours</div>
+        </div>
+        <br>
+        <div style="color:#334155;font-size:10px;">
+          🖱 Clic + glisser → pivoter<br>
+          🔍 Molette → zoomer<br>
+          💡 Survol → détail filiale/mois<br>
+          ▶ Rotation → vue panoramique
+        </div>
+      </div>
+    </div>
+
+  </aside>
+
+  <!-- ── Zone graphique ───────────────────────────── -->
+  <div class="s3d-canvas-area">
+
+    <div class="s3d-loading" id="s3d-loading">
+      <div class="s3d-loading-ring"></div>
+      <div class="s3d-loading-text">Construction de la surface 3D…</div>
+    </div>
+
+    <div class="s3d-empty" id="s3d-empty">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path d="M3 3l18 18M10.5 10.677a2 2 0 002.823 2.823M6.362 6.227A8 8 0 0118.39 18"/>
+      </svg>
+      <span class="s3d-empty-text">Aucune donnée disponible</span>
+    </div>
+
+    <div id="s3d-plotly"></div>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.plot.ly/plotly-2.27.0.min.js" charset="utf-8"></script>
+<script src="{{ url_for('static', filename='js/clustering_3d.js') }}"></script>
+{% endblock %}

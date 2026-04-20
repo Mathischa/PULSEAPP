@@ -56,10 +56,16 @@ def create_app() -> Flask:
 
     @app.route("/api/status")
     def api_status():
-        # Vérification double : flag global + taille du cache (plus fiable en mode debug)
-        from pulse_v2.data.cache import CACHE as _C
-        ready = _data_ready or len(_C) > 0
-        return jsonify({"ready": ready, "cache_size": len(_C)})
+        from pulse_v2.data.cache import CACHE as _C, TOKENS as _T
+        ready      = _data_ready or len(_C) > 0
+        n_filiales = len(_T)
+        n_flux     = sum(len(v) for v in _T.values())
+        return jsonify({
+            "ready":      ready,
+            "cache_size": len(_C),
+            "n_filiales": n_filiales,
+            "n_flux":     n_flux,
+        })
 
     from api.accueil    import bp as bp_accueil
     from api.ecarts     import bp as bp_ecarts
@@ -74,9 +80,10 @@ def create_app() -> Flask:
     from api.heatmap   import bp as bp_heatmap
     from api.heatmap_ecarts import bp as bp_heatmap_ecarts
     from api.benchmarking import bp as bp_benchmarking
+    from api.clustering_3d import bp as bp_clustering_3d
     from api.import_profils import bp as bp_import_profils
 
-    for bp in (bp_accueil, bp_ecarts, bp_catalogue, bp_tendance, bp_repartition, bp_repartition_flux, bp_visualisation, bp_visualisation_flux, bp_prevision_repartition, bp_ml_ecarts, bp_heatmap, bp_heatmap_ecarts, bp_benchmarking, bp_import_profils):
+    for bp in (bp_accueil, bp_ecarts, bp_catalogue, bp_tendance, bp_repartition, bp_repartition_flux, bp_visualisation, bp_visualisation_flux, bp_prevision_repartition, bp_ml_ecarts, bp_heatmap, bp_heatmap_ecarts, bp_benchmarking, bp_clustering_3d, bp_import_profils):
         app.register_blueprint(bp)
 
     @app.route("/")
@@ -131,6 +138,10 @@ def create_app() -> Flask:
     @app.route("/benchmarking")
     def page_benchmarking():
         return render_template("benchmarking.html")
+
+    @app.route("/clustering_3d")
+    def page_clustering_3d():
+        return render_template("clustering_3d.html")
 
     @app.route("/api/import_profils/browse_folder", methods=["POST"])
     def api_browse_folder():

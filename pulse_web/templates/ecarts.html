@@ -3,6 +3,86 @@
 {% block title %}Écarts Importants{% endblock %}
 {% block breadcrumb %}Analyse · Écarts importants{% endblock %}
 
+{% block head %}
+<style>
+/* ── LAYOUT ─────────────────────────────────────────────── */
+.visu-layout {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 0;
+  align-items: stretch;
+  min-height: calc(100vh - 160px);
+}
+@media (max-width: 1024px) {
+  .visu-layout { grid-template-columns: 1fr; }
+}
+
+/* ── PANNEAU GAUCHE ──────────────────────────────────────── */
+.ctrl-panel {
+  background: #0e1420;
+  border-right: 1px solid rgba(255,255,255,.07);
+  border-radius: 16px 0 0 16px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: sticky;
+  top: 0;
+  max-height: calc(100vh - 100px);
+}
+.ctrl-header {
+  padding: 20px 20px 16px;
+  border-bottom: 1px solid rgba(255,255,255,.07);
+  background: rgba(76,124,243,.06);
+  flex-shrink: 0;
+}
+.ctrl-header-title { font-size: 13px; font-weight: 700; color: #F3F4F6; letter-spacing: .02em; }
+.ctrl-header-sub   { font-size: 11px; color: #64748B; margin-top: 3px; }
+.ctrl-body {
+  flex: 1;
+  padding: 18px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  overflow-y: auto;
+}
+.ctrl-group { display: flex; flex-direction: column; gap: 6px; }
+.ctrl-label {
+  font-size: 10px; font-weight: 700; color: #4C7CF3;
+  text-transform: uppercase; letter-spacing: .08em;
+}
+.ctrl-sep { height: 1px; background: rgba(255,255,255,.07); margin: 2px 0; }
+.ctrl-footer { padding: 14px 16px; border-top: 1px solid rgba(255,255,255,.07); flex-shrink: 0; }
+
+/* ── PANNEAU DROIT ───────────────────────────────────────── */
+.chart-panel {
+  background: #0a0e18;
+  border-radius: 0 16px 16px 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-width: 0;
+}
+.chart-topbar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 18px 24px 16px;
+  border-bottom: 1px solid rgba(255,255,255,.06);
+  background: rgba(255,255,255,.02);
+  flex-shrink: 0;
+}
+.chart-info-title { font-size: 16px; font-weight: 700; color: #F3F4F6; }
+.chart-info-sub   { font-size: 12px; color: #64748B; margin-top: 3px; }
+.charts-scroll {
+  flex: 1; overflow-y: auto; padding: 20px 24px 28px;
+  display: flex; flex-direction: column; gap: 16px;
+}
+.state-loading-inner {
+  display: flex; align-items: center; justify-content: center;
+  gap: 14px; color: #64748B; font-size: 13px; padding: 48px 24px;
+}
+</style>
+{% endblock %}
+
 {% block content %}
 
 <div class="page-header">
@@ -11,72 +91,131 @@
     <p class="subtitle">Écarts ≥ 40 % entre valeur réalisée et prévision, toutes filiales</p>
   </div>
   <div class="page-header-actions">
-    <button class="btn btn--secondary btn--sm" id="btn-export" disabled>⬇ Exporter CSV</button>
+    <button class="btn btn--secondary btn--sm" id="btn-export-pdf">📄 PDF</button>
+    <button class="btn btn--secondary btn--sm" id="btn-export-excel" disabled>📊 Excel</button>
+    <button class="btn btn--secondary btn--sm" id="btn-export" disabled>⬇ CSV</button>
   </div>
 </div>
 
-<!-- Filtres -->
-<div class="filters-bar">
-  <div class="filter-group">
-    <label class="filter-label">Année</label>
-    <select class="filter-select" id="f-annee"><option value="">Toutes</option></select>
-  </div>
-  <div class="filter-group">
-    <label class="filter-label">Filiale</label>
-    <select class="filter-select" id="f-filiale"><option value="">Toutes</option></select>
-  </div>
-  <div class="filter-group">
-    <label class="filter-label">Flux</label>
-    <select class="filter-select" id="f-flux" style="min-width:200px;"><option value="">Tous</option></select>
-  </div>
-  <div class="filter-group">
-    <label class="filter-label">Favorabilité</label>
-    <select class="filter-select" id="f-fav">
-      <option value="">Tous</option>
-      <option value="true">✅ Favorable</option>
-      <option value="false">❌ Défavorable</option>
-    </select>
-  </div>
-</div>
+<div class="visu-layout">
 
-<!-- Loading -->
-<div id="loading" class="loading-state">
-  <div class="spinner"></div>
-  Calcul des écarts en cours…
-</div>
+  <!-- ══════════════════════════════════════════
+       PANNEAU DE CONTRÔLE
+  ══════════════════════════════════════════ -->
+  <div class="ctrl-panel">
 
-<!-- Table -->
-<div id="table-container" hidden>
-
-  <div class="table-toolbar">
-    <div class="table-info">
-      <span id="table-count">—</span>
+    <div class="ctrl-header">
+      <div class="ctrl-header-title">Paramètres</div>
+      <div class="ctrl-header-sub">Filtrez les écarts</div>
     </div>
-    <div class="table-legend">
-      <div class="legend-item"><span class="dot dot--green"></span> Favorable</div>
-      <div class="legend-item"><span class="dot dot--red"></span> Défavorable</div>
+
+    <div class="ctrl-body">
+
+      <!-- Année -->
+      <div class="ctrl-group">
+        <div class="ctrl-label">Année</div>
+        <select class="filter-select" id="f-annee" style="width:100%;">
+          <option value="">Toutes</option>
+        </select>
+      </div>
+
+      <!-- Filiale -->
+      <div class="ctrl-group">
+        <div class="ctrl-label">Filiale</div>
+        <select class="filter-select" id="f-filiale" style="width:100%;">
+          <option value="">Toutes</option>
+        </select>
+      </div>
+
+      <!-- Flux -->
+      <div class="ctrl-group">
+        <div class="ctrl-label">Flux</div>
+        <select class="filter-select" id="f-flux" style="width:100%;">
+          <option value="">Tous</option>
+        </select>
+      </div>
+
+      <div class="ctrl-sep"></div>
+
+      <!-- Favorabilité -->
+      <div class="ctrl-group">
+        <div class="ctrl-label">Favorabilité</div>
+        <select class="filter-select" id="f-fav" style="width:100%;">
+          <option value="">Tous</option>
+          <option value="true">✅ Favorable</option>
+          <option value="false">❌ Défavorable</option>
+        </select>
+      </div>
+
+    </div><!-- /ctrl-body -->
+
+    <div class="ctrl-footer">
+      <button class="btn btn--ghost btn--sm" id="btn-reset-filters" style="width:100%;justify-content:center;" title="Réinitialiser les filtres">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+        Réinitialiser
+      </button>
     </div>
-  </div>
 
-  <div class="table-wrap">
-    <table class="data-table" id="ecarts-table">
-      <thead>
-        <tr>
-          <th data-col="date">      <span class="sort-arrow">Date</span></th>
-          <th data-col="profil">    <span class="sort-arrow">Profil</span></th>
-          <th data-col="filiale">   <span class="sort-arrow">Filiale</span></th>
-          <th data-col="flux">      <span class="sort-arrow">Flux</span></th>
-          <th data-col="reel"       class="num"><span class="sort-arrow">Réel (k€)</span></th>
-          <th data-col="prevision"  class="num"><span class="sort-arrow">Prévision (k€)</span></th>
-          <th data-col="ecart_k"    class="num"><span class="sort-arrow">Écart (k€)</span></th>
-          <th data-col="ecart_pct"  class="num"><span class="sort-arrow">Écart (%)</span></th>
-        </tr>
-      </thead>
-      <tbody id="ecarts-tbody"></tbody>
-    </table>
-  </div>
+  </div><!-- /ctrl-panel -->
 
-</div>
+  <!-- ══════════════════════════════════════════
+       ZONE TABLEAU
+  ══════════════════════════════════════════ -->
+  <div class="chart-panel">
+
+    <div class="chart-topbar">
+      <div>
+        <div class="chart-info-title">Écarts significatifs</div>
+        <div class="chart-info-sub" id="table-count">—</div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <div style="display:flex;gap:8px;">
+          <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:#64748B;">
+            <span style="width:8px;height:8px;border-radius:50%;background:#22C55E;display:inline-block;"></span>Favorable
+          </div>
+          <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:#64748B;">
+            <span style="width:8px;height:8px;border-radius:50%;background:#EF4444;display:inline-block;"></span>Défavorable
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="charts-scroll">
+
+      <!-- Loading -->
+      <div id="loading">
+        <div class="state-loading-inner">
+          <div class="spinner"></div>
+          Calcul des écarts en cours…
+        </div>
+      </div>
+
+      <!-- Table -->
+      <div id="table-container" hidden>
+        <div class="table-wrap">
+          <table class="data-table" id="ecarts-table">
+            <thead>
+              <tr>
+                <th data-col="date">      <span class="sort-arrow">Date</span></th>
+                <th data-col="profil">    <span class="sort-arrow">Profil</span></th>
+                <th data-col="filiale">   <span class="sort-arrow">Filiale</span></th>
+                <th data-col="flux">      <span class="sort-arrow">Flux</span></th>
+                <th data-col="reel"       class="num"><span class="sort-arrow">Réel (k€)</span></th>
+                <th data-col="prevision"  class="num"><span class="sort-arrow">Prévision (k€)</span></th>
+                <th data-col="ecart_k"    class="num"><span class="sort-arrow">Écart (k€)</span></th>
+                <th data-col="ecart_pct"  class="num"><span class="sort-arrow">Écart (%)</span></th>
+              </tr>
+            </thead>
+            <tbody id="ecarts-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+    </div><!-- /charts-scroll -->
+
+  </div><!-- /chart-panel -->
+
+</div><!-- /visu-layout -->
 
 {% endblock %}
 

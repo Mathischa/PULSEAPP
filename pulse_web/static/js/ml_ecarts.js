@@ -434,7 +434,7 @@ async function lancerAnalyse() {
   document.getElementById("btn-lancer").addEventListener("click", lancerAnalyse);
 
   document.getElementById("btn-export-pdf")?.addEventListener("click", () => {
-    window.pulsePDF("Machine Learning — Analyse des écarts — PULSE");
+    window.pulseChartPDF(null, "ML-Analyse-ecarts-PULSE");
   });
 
   document.getElementById("btn-export-excel")?.addEventListener("click", () => {
@@ -443,8 +443,17 @@ async function lancerAnalyse() {
     if (chart) {
       window.pulseExcelChart(chart, "ml_ecarts_analyse");
     } else {
-      alert("Lancez d'abord une analyse ML.");
+      window.toast?.("Lancez d'abord une analyse ML.", "error");
     }
+  });
+
+  document.getElementById("btn-reset-filters")?.addEventListener("click", () => {
+    const selSection = document.getElementById("ml-section");
+    const selFlux    = document.getElementById("ml-flux");
+    if (selSection) selSection.selectedIndex = 0;
+    if (selFlux)    { selFlux.innerHTML = '<option value="">Tous les flux</option>'; selFlux.disabled = true; }
+    document.getElementById("btn-lancer").disabled = true;
+    window.toast?.("Filtres réinitialisés", "info");
   });
 
   // Charger catalogue

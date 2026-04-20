@@ -29,7 +29,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       return await res.json();
     } catch (e) {
       console.error("Erreur fetch benchmarking:", e);
-      alert("Erreur lors du chargement des données.");
+      window.toast?.("Erreur lors du chargement des données.", "error");
       return null;
     }
   }
@@ -59,17 +59,17 @@ document.addEventListener("DOMContentLoaded", async () => {
     function linearRegression(points) {
       if (points.length < 2) return null;
       const n = points.length;
-      const sumX = points.reduce((s, p) => s + p.x, 0);
-      const sumY = points.reduce((s, p) => s + p.y, 0);
-      const sumXY = points.reduce((s, p) => s + p.x * p.y, 0);
-      const sumX2 = points.reduce((s, p) => s + p.x * p.x, 0);
+      const sumX = points.reduce((s, p) => s + p.prevision, 0);
+      const sumY = points.reduce((s, p) => s + p.reel, 0);
+      const sumXY = points.reduce((s, p) => s + p.prevision * p.reel, 0);
+      const sumX2 = points.reduce((s, p) => s + p.prevision * p.prevision, 0);
 
       const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
       const intercept = (sumY - slope * sumX) / n;
 
       // Points pour la ligne
-      const xMin = Math.min(...points.map((p) => p.x));
-      const xMax = Math.max(...points.map((p) => p.x));
+      const xMin = Math.min(...points.map((p) => p.prevision));
+      const xMax = Math.max(...points.map((p) => p.prevision));
       return [
         { x: xMin, y: slope * xMin + intercept },
         { x: xMax, y: slope * xMax + intercept },
@@ -89,7 +89,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         data: points.map((p) => ({
           x: p.prevision,
           y: p.reel,
-          r: Math.sqrt(Math.abs(p.ecart)) + 3, // taille = écart
+          r: Math.sqrt(Math.abs(p.ecart_pct)) + 3, // taille = écart
         })),
         backgroundColor: color + "55",
         borderColor: color,
@@ -118,7 +118,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
 
     // Ligne parfaite (Réel = Prévision)
-    const maxVal = Math.max(...allPoints.map((p) => Math.max(p.x, p.y)));
+    const maxVal = Math.max(...allPoints.map((p) => Math.max(p.prevision, p.reel)));
     datasets.push({
       label: "Parfait (Réel = Prévision)",
       data: [
@@ -354,12 +354,44 @@ document.addEventListener("DOMContentLoaded", async () => {
   const filterFiliale = document.getElementById("f-filiale");
   const filterFluxType = document.getElementById("f-flux-type");
 
+  function populateSelect(selectEl, values) {
+    const current = selectEl.value;
+    // Supprimer toutes les options sauf la première ("Toutes")
+    while (selectEl.options.length > 1) selectEl.remove(1);
+    for (const v of values) {
+      const opt = document.createElement("option");
+      opt.value = opt.textContent = v;
+      selectEl.appendChild(opt);
+    }
+    // Restaurer la sélection si possible
+    if (current) selectEl.value = current;
+  }
+
+  function initFilters(data) {
+    const annees = [...new Set(data.map((r) => r.annee).filter(Boolean))].sort((a, b) => a - b);
+    const filiales = [...new Set(data.map((r) => r.filiale).filter(Boolean))].sort();
+    populateSelect(filterAnnee, annees);
+    populateSelect(filterFiliale, filiales);
+    // Présélectionner la dernière année
+    if (annees.length) filterAnnee.value = annees[annees.length - 1];
+  }
+
+  function pushUrlState() {
+    const p = new URLSearchParams();
+    if (filterAnnee.value)    p.set("annee",    filterAnnee.value);
+    if (filterFiliale.value)  p.set("filiale",  filterFiliale.value);
+    if (filterFluxType.value) p.set("flux_type", filterFluxType.value);
+    const qs = p.toString();
+    history.replaceState(null, "", qs ? "?" + qs : location.pathname);
+  }
+
   async function applyFilters() {
     const filters = {
       annee: filterAnnee.value || "",
       filiale: filterFiliale.value || "",
       flux_type: filterFluxType.value || "",
     };
+    pushUrlState();
     await loadAndRender(filters);
   }
 
@@ -367,11 +399,30 @@ document.addEventListener("DOMContentLoaded", async () => {
   filterFiliale.addEventListener("change", applyFilters);
   filterFluxType.addEventListener("change", applyFilters);
 
-  // Initial load
-  await loadAndRender();
+  // Initial load : charger toutes les données pour peupler les filtres
+  const allDataInit = await fetchData();
+  if (allDataInit && allDataInit.length > 0) {
+    initFilters(allDataInit);
+    // Restaurer depuis URL
+    const p = new URLSearchParams(location.search);
+    if (p.get("annee"))     filterAnnee.value    = p.get("annee");
+    if (p.get("filiale"))   filterFiliale.value  = p.get("filiale");
+    if (p.get("flux_type")) filterFluxType.value = p.get("flux_type");
+  }
+  // Charger avec les filtres (URL ou présélection)
+  await applyFilters();
 
   // Export PDF
   document.getElementById("btn-export-pdf").addEventListener("click", () => {
-    window.pulsePDF("Benchmarking-Comparatif");
+    window.pulseChartPDF(null, "Benchmarking-Comparatif");
+  });
+
+  // Reset filtres
+  document.getElementById("btn-reset-filters")?.addEventListener("click", async () => {
+    filterAnnee.selectedIndex = 0;
+    filterFiliale.selectedIndex = 0;
+    filterFluxType.selectedIndex = 0;
+    await applyFilters();
+    window.toast?.("Filtres réinitialisés", "info");
   });
 });

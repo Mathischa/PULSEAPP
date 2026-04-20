@@ -257,12 +257,21 @@ async function lancerHeatmap() {
 (async () => {
   document.getElementById("btn-hm-lancer").addEventListener("click", lancerHeatmap);
 
+  document.getElementById("btn-reset-filters")?.addEventListener("click", () => {
+    const selSection = document.getElementById("hm-section");
+    const selAnnee   = document.getElementById("hm-annee");
+    if (selSection) selSection.selectedIndex = 0;
+    if (selAnnee)   { selAnnee.innerHTML = '<option value="">—</option>'; selAnnee.disabled = true; }
+    document.getElementById("btn-hm-lancer").disabled = true;
+    window.toast?.("Filtres réinitialisés", "info");
+  });
+
   document.getElementById("btn-export-pdf")?.addEventListener("click", () => {
-    window.pulsePDF("Heatmap des anomalies — PULSE");
+    window.pulsePDF("Heatmap-anomalies-PULSE", ".hm-layout");
   });
 
   document.getElementById("btn-export-excel")?.addEventListener("click", () => {
-    if (!_data) { alert("Lancez d'abord la heatmap."); return; }
+    if (!_data) { window.toast?.("Lancez d'abord la heatmap.", "error"); return; }
     const section  = document.getElementById("hm-section")?.value || "Section";
     const allProfils = Object.keys(_data);
     const allFlux    = [...new Set(allProfils.flatMap(p => Object.keys(_data[p] || {})))].sort();
@@ -316,7 +325,25 @@ async function lancerHeatmap() {
     selAnnee.addEventListener("change", () => {
       document.getElementById("btn-hm-lancer").disabled =
         !selSection.value || !selAnnee.value;
+      // URL state
+      const p = new URLSearchParams();
+      if (selSection.value) p.set("section", selSection.value);
+      if (selAnnee.value)   p.set("annee",   selAnnee.value);
+      const qs = p.toString();
+      history.replaceState(null, "", qs ? "?" + qs : location.pathname);
     });
+
+    // Restaurer depuis URL au chargement
+    const _urlP = new URLSearchParams(location.search);
+    if (_urlP.get("section") && _catalogue[_urlP.get("section")]) {
+      selSection.value = _urlP.get("section");
+      selSection.dispatchEvent(new Event("change"));
+      // l'année sera restaurée après que selSection.change ait peuplé selAnnee
+      selSection.addEventListener("change", function _once() {
+        if (_urlP.get("annee")) selAnnee.value = _urlP.get("annee");
+        selSection.removeEventListener("change", _once);
+      });
+    }
 
   } catch (_) {
     document.getElementById("hm-error-msg").textContent = "Impossible de charger le catalogue.";
